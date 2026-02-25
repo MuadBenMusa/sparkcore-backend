@@ -1,0 +1,30 @@
+name: Spring Boot CI/CD Pipeline
+
+# Wird bei jedem 'Push' oder 'Pull Request' auf den 'main' Branch ausgeführt
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    # Die Pipeline wird auf einer aktuellen Ubuntu-Instanz ausgeführt
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Holt den Code von GitHub auf den unsichtbaren Server
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Installiert Java 21 (genau wie auf deinem PC)
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven # Macht zukünftige Durchläufe viel schneller!
+
+      # 3. Führt alle JUnit-Tests aus
+      - name: Run Maven Tests
+        run: mvn clean test

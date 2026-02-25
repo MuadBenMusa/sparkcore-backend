@@ -1,0 +1,26 @@
+spring:
+  # 1. Sagt Spring Boot, dass es lokal zusätzlich die application-local.yaml laden soll
+  profiles:
+    active: local
+
+  # 2. Datenbank-Konfiguration mit sicheren Platzhaltern
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${DB_NAME:sparkcore_db}
+    username: ${DB_USERNAME:sparkcore_user}
+    password: ${DB_PASSWORD:super_secret_password}
+    driver-class-name: org.postgresql.Driver
+
+  # 3. Hibernate (Übersetzer zwischen Java und Datenbank)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# 4. Security & JWT Konfiguration
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}

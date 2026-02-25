@@ -1,0 +1,10 @@
+services:
+  postgres-db:
+    image: postgres:15
+    container_name: sparkcore-postgres
+    environment:
+      POSTGRES_USER: sparkcore_user
+      POSTGRES_PASSWORD: super_secret_password
+      POSTGRES_DB: sparkcore_db
+    ports:
+      - "5432:5432"
