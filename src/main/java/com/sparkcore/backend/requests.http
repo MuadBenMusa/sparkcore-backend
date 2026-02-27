@@ -120,13 +120,13 @@ Content-Type: application/json
 
 ###
 GET http://localhost:8080/api/v1/accounts/DE12345678901234567890/transactions
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE1Mjg1OCwiZXhwIjoxNzcyMjM5MjU4fQ.mj_WrX1RR6QnG-5UXF1wMWqU07OZ01tlQaMI8E5e0OTpMIva4IsfVWGKrKYNtuh4
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE2ODkxNSwiZXhwIjoxNzcyMjU1MzE1fQ.kJ-fPf_OvMy_fIkCaDaAbaEtzFZ9h4C1jPIkR-OXNu4V_G0K-Btdw8agTpV2yepW
 
 ### 3. Alle Konten abrufen
 GET http://localhost:8080/api/v1/accounts
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzIxNTI1MzMsImV4cCI6MTc3MjIzODkzM30.Evjm1rxgcduMmbcODZG1Z_k9Qyz2AY_2iRM73ZaYb1STEao0t39TFATvPwnTydT-
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE2ODkxNSwiZXhwIjoxNzcyMjU1MzE1fQ.kJ-fPf_OvMy_fIkCaDaAbaEtzFZ9h4C1jPIkR-OXNu4V_G0K-Btdw8agTpV2yepW-
 
 ### 4. Alle audit-logs abrufen
 GET http://localhost:8080/api/v1/audit-logs
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzIxNTI1MzMsImV4cCI6MTc3MjIzODkzM30.Evjm1rxgcduMmbcODZG1Z_k9Qyz2AY_2iRM73ZaYb1STEao0t39TFATvPwnTydT-
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE2ODkxNSwiZXhwIjoxNzcyMjU1MzE1fQ.kJ-fPf_OvMy_fIkCaDaAbaEtzFZ9h4C1jPIkR-OXNu4V_G0K-Btdw8agTpV2yepW
 

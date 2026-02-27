@@ -5,9 +5,9 @@ spring:
 
   # 2. Datenbankverbindung – Werte MÜSSEN als Env-Vars oder im lokalen Profil gesetzt sein
   datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/${DB_NAME:sparkcore_db}
+    username: ${DB_USERNAME:sparkcore_user}
+    password: ${DB_PASSWORD:sparkcore_pass}
     driver-class-name: org.postgresql.Driver
 
   # 3. Hibernate – validiert das Schema (Flyway übernimmt die Erstellung)

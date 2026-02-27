@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
-    // 3. Der absolute Notfall-Fänger für alles andere (verhindert, dass Stacktraces
+    // 4. Der absolute Notfall-Fänger für alles andere (verhindert, dass Stacktraces
     // nach außen dringen)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
