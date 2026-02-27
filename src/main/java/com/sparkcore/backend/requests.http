@@ -1,82 +1,29 @@
-### 1. Erstes Konto erstellen
-POST http://localhost:8080/api/v1/accounts
-Content-Type: application/json
-Authorization: Basic user 77ece621-2366-4bfe-a7d8-60094f9b630a
+### ============================================================
+### SparkCore Backend – API Test Requests
+### Reihenfolge: Auth → Konten → Transaktionen → Audit Logs
+### ============================================================
+###
+### ANLEITUNG:
+### 1. App starten: ./mvnw spring-boot:run
+### 2. Request "Step 1: Login" ausführen
+### 3. Token aus der Antwort kopieren und in alle anderen Requests eintragen
+###    (Ersetze <TOKEN> mit dem echten JWT-Token)
+### ============================================================
 
-{
-  "ownerName": "Max Mustermann",
-  "iban": "DE12345678901234567890",
-  "initialBalance": 1000.50
-}
 
-### 2. Zweites Konto erstellen (Trenne die Requests mit ###)
-POST http://localhost:8080/api/v1/accounts
-Content-Type: application/json
-Authorization: Basic user eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzE5NjY3MzIsImV4cCI6MTc3MjA1MzEzMn0.u7sMJ0S_g0ytKxusWoUcNbEIFM44XE6_XVzjEXPyA5OkmA9sNTNuDuUuviKvNlO9
+### ──────────────────────────────────────────────
+### SYSTEM
+### ──────────────────────────────────────────────
 
-{
-  "ownerName": "Lisa Müller",
-  "iban": "DE09876543210987654321",
-  "initialBalance": 500.00
-}
-
-### 3. Alle Konten abrufen
-GET http://localhost:8080/api/v1/accounts
-Authorization: Basic user 77ece621-2366-4bfe-a7d8-60094f9b630a
-
-### 4. Einzelnes Konto abrufen (z.B. ID 1)
-GET http://localhost:8080/api/v1/accounts/2
-Authorization: Basic user 77ece621-2366-4bfe-a7d8-60094f9b630a
-
-### 5. Überweisung durchführen (150.50 von Max an Lisa)
-POST http://localhost:8080/api/v1/accounts/transfer
-Authorization: Basic user 77ece621-2366-4bfe-a7d8-60094f9b630a
-Content-Type: application/json
-
-{
-  "fromIban": "DE12345678901234567890",
-  "toIban": "DE09876543210987654321",
-  "amount": 150.50
-}
-
-### 7. Kontoauszug für Max Mustermann abrufen
-GET http://localhost:8080/api/v1/accounts/DE12345678901234567890/transactions
-Authorization: Basic user 77ece621-2366-4bfe-a7d8-60094f9b630a
-
-### Öffentlicher Ping Test
+### Ping – Öffentlich (kein Token nötig)
 GET http://localhost:8080/api/v1/system/ping
 
 
-### 8. Einen neuen Bank-Mitarbeiter (Admin) registrieren
-POST http://localhost:8080/api/v1/auth/register
-Content-Type: application/json
+### ──────────────────────────────────────────────
+### AUTH
+### ──────────────────────────────────────────────
 
-{
-  "username": "admin",
-  "password": "super_secret",
-  "role": "ADMIN"
-}
-
-### 1. Registrieren (Einmalig)
-POST http://localhost:8080/api/v1/auth/register
-Content-Type: application/json
-
-{
-  "username": "max_muster",
-  "password": "geheimesPasswort123",
-  "role": "USER"
-}
-
-### 2. Login (Holt das Token!)
-POST http://localhost:8080/api/v1/auth/login
-Content-Type: application/json
-
-{
-  "username": "max_muster",
-  "password": "geheimesPasswort123"
-}
-
-### 2. Login (Holt das Token!)
+### Step 1: Admin Login → Token kopieren!
 POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
@@ -85,10 +32,37 @@ Content-Type: application/json
   "password": "super_secret"
 }
 
-### 3. Gesichertes Konto erstellen (MIT TOKEN!)
+###
+
+### Step 2: Neuen User registrieren (kein Token nötig)
+POST http://localhost:8080/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "max_muster",
+  "password": "geheimesPasswort123"
+}
+
+###
+
+### Step 3: User Login → Token kopieren!
+POST http://localhost:8080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "max_muster",
+  "password": "geheimesPasswort123"
+}
+
+
+### ──────────────────────────────────────────────
+### KONTEN (erfordert Admin-Token für POST)
+### ──────────────────────────────────────────────
+
+### Step 4: Erstes Konto erstellen (Admin-Token erforderlich)
 POST http://localhost:8080/api/v1/accounts
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzE5NjcwODEsImV4cCI6MTc3MjA1MzQ4MX0.84xd0-j3JpxxRfvr3djuzMNvG_HElsRtQi-gR9UePewNwLzZ6SSKo2mT2q8pPfmu
+Authorization: Bearer <TOKEN>
 
 {
   "ownerName": "Max Mustermann",
@@ -97,20 +71,39 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3N
 }
 
 ###
+
+### Step 5: Zweites Konto erstellen (Admin-Token erforderlich)
 POST http://localhost:8080/api/v1/accounts
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzE5NjcwODEsImV4cCI6MTc3MjA1MzQ4MX0.84xd0-j3JpxxRfvr3djuzMNvG_HElsRtQi-gR9UePewNwLzZ6SSKo2mT2q8pPfmu
+Authorization: Bearer <TOKEN>
 
 {
-"ownerName": "admin_max",
-"iban": "DE09876543210987654321",
-"initialBalance": 900.50
+  "ownerName": "Lisa Müller",
+  "iban": "DE09876543210987654321",
+  "initialBalance": 500.00
 }
 
-### 5. Überweisung durchführen (150.50 von Max an Lisa)
+###
+
+### Step 6: Alle Konten abrufen
+GET http://localhost:8080/api/v1/accounts
+Authorization: Bearer <TOKEN>
+
+###
+
+### Step 7: Einzelnes Konto abrufen (per ID)
+GET http://localhost:8080/api/v1/accounts/1
+Authorization: Bearer <TOKEN>
+
+
+### ──────────────────────────────────────────────
+### TRANSAKTIONEN
+### ──────────────────────────────────────────────
+
+### Step 8: Überweisung – Max → Lisa (150.50 EUR)
 POST http://localhost:8080/api/v1/accounts/transfer
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE1MjYxMiwiZXhwIjoxNzcyMjM5MDEyfQ.iMw2_tiA8YZ_AmEFQUEzVkHo01QtDs3fPOJOUfvG39_ytDVC6QNH2xI4o3FH8-5v
 Content-Type: application/json
+Authorization: Bearer <TOKEN>
 
 {
   "fromIban": "DE12345678901234567890",
@@ -119,14 +112,16 @@ Content-Type: application/json
 }
 
 ###
+
+### Step 9: Kontoauszug für Max – alle Transaktionen
 GET http://localhost:8080/api/v1/accounts/DE12345678901234567890/transactions
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE2ODkxNSwiZXhwIjoxNzcyMjU1MzE1fQ.kJ-fPf_OvMy_fIkCaDaAbaEtzFZ9h4C1jPIkR-OXNu4V_G0K-Btdw8agTpV2yepW
+Authorization: Bearer <TOKEN>
 
-### 3. Alle Konten abrufen
-GET http://localhost:8080/api/v1/accounts
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE2ODkxNSwiZXhwIjoxNzcyMjU1MzE1fQ.kJ-fPf_OvMy_fIkCaDaAbaEtzFZ9h4C1jPIkR-OXNu4V_G0K-Btdw8agTpV2yepW-
 
-### 4. Alle audit-logs abrufen
+### ──────────────────────────────────────────────
+### AUDIT LOGS (nur Admin)
+### ──────────────────────────────────────────────
+
+### Step 10: Alle Audit-Logs abrufen (Admin-Token erforderlich)
 GET http://localhost:8080/api/v1/audit-logs
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE2ODkxNSwiZXhwIjoxNzcyMjU1MzE1fQ.kJ-fPf_OvMy_fIkCaDaAbaEtzFZ9h4C1jPIkR-OXNu4V_G0K-Btdw8agTpV2yepW
-
+Authorization: Bearer <TOKEN>
