@@ -8,9 +8,9 @@ import com.sparkcore.backend.repository.AuditLogRepository;
 import com.sparkcore.backend.repository.TransactionRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import com.sparkcore.backend.util.RequestUtils;
 
 import java.math.BigDecimal;
 
@@ -26,12 +26,6 @@ public class AccountService {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.auditLogRepository = auditLogRepository;
-    }
-
-    // Hilfsmethode: IP-Adresse aus dem aktuellen Request holen
-    private String getClientIp() {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        return (attributes != null) ? attributes.getRequest().getRemoteAddr() : "UNKNOWN_IP";
     }
 
     private String getCurrentUsername() {
@@ -54,7 +48,7 @@ public class AccountService {
         auditLogRepository.save(new AuditLog(
                 getCurrentUsername(), "CREATE_ACCOUNT",
                 "Konto erstellt für: " + ownerName + " (IBAN: " + iban + ")",
-                getClientIp(), "SUCCESS"));
+                RequestUtils.getClientIp(), "SUCCESS"));
 
         return savedAccount;
     }
@@ -72,6 +66,11 @@ public class AccountService {
         // negativer Betrag macht keinen Sinn
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Überweisungsbetrag muss größer als 0 sein.");
+        }
+
+        // Eigenüberweisung verhindern
+        if (fromIban.equals(toIban)) {
+            throw new IllegalArgumentException("Sender- und Empfängerkonto dürfen nicht identisch sein.");
         }
 
         // Sender- und Empfängerkonto aus der DB laden
@@ -100,17 +99,24 @@ public class AccountService {
         auditLogRepository.save(new AuditLog(
                 getCurrentUsername(), "TRANSFER",
                 "Von: " + fromIban + " Nach: " + toIban + " Betrag: " + amount,
-                getClientIp(), "SUCCESS"));
+                RequestUtils.getClientIp(), "SUCCESS"));
     }
 
     public java.util.List<Transaction> getTransactionHistory(String iban) {
-        return transactionRepository.findBySenderIbanOrReceiverIbanOrderByTimestampDesc(iban, iban);
-    }
+        // Ownership Check: Darf der aktuelle Nutzer dieses Konto einsehen?
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-    public java.util.List<com.sparkcore.backend.model.AuditLog> getAuditLogs() {
-        return auditLogRepository.findAll(
-                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
-                        "timestamp"));
+        if (!isAdmin) {
+            Account account = accountRepository.findByIban(iban)
+                    .orElseThrow(() -> new IllegalArgumentException("Konto nicht gefunden: " + iban));
+
+            if (!account.getOwnerName().equals(auth.getName())) {
+                throw new AccessDeniedException("Zugriff verweigert: Dies ist nicht Ihr Konto.");
+            }
+        }
+
+        return transactionRepository.findBySenderIbanOrReceiverIbanOrderByTimestampDesc(iban, iban);
     }
 
 }

@@ -29,7 +29,8 @@ public class GlobalExceptionHandler {
     // 2. NEU: Fängt Validierungs-Fehler ab (z.B. leere IBAN im DTO)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
-        // Sammelt alle fehlerhaften Felder auf und baut einen schönen Text daraus (z.B. "iban: darf nicht leer sein")
+        // Sammelt alle fehlerhaften Felder auf und baut einen schönen Text daraus (z.B.
+        // "iban: darf nicht leer sein")
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .collect(Collectors.joining(", "));
@@ -43,7 +44,22 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-    // 3. Der absolute Notfall-Fänger für alles andere (verhindert, dass Stacktraces nach außen dringen)
+    // 3. NEU: Fängt DB-Constraint-Verletzungen ab (z.B. doppelte IBAN)
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityException(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.CONFLICT.value());
+        errorResponse.put("error", "Conflict");
+        errorResponse.put("message",
+                "Ein Datensatz mit diesem eindeutigen Wert existiert bereits (z.B. Benutzername oder IBAN).");
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+    // 3. Der absolute Notfall-Fänger für alles andere (verhindert, dass Stacktraces
+    // nach außen dringen)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
         Map<String, Object> errorResponse = new HashMap<>();

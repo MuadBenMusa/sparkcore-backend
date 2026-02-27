@@ -1,7 +1,7 @@
 package com.sparkcore.backend.controller;
 
 import com.sparkcore.backend.model.AuditLog;
-import com.sparkcore.backend.service.AccountService;
+import com.sparkcore.backend.service.AuditLogService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -13,15 +13,15 @@ import java.util.List;
 @RequestMapping("/api/v1/audit-logs")
 public class AuditLogController {
 
-    private final AccountService accountService;
+    private final AuditLogService auditLogService;
 
-    public AuditLogController(AccountService accountService) {
-        this.accountService = accountService;
+    public AuditLogController(AuditLogService auditLogService) {
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<AuditLog>> getAuditLogs() {
-        return ResponseEntity.ok(accountService.getAuditLogs());
+        return ResponseEntity.ok(auditLogService.getAllAuditLogs());
     }
 }

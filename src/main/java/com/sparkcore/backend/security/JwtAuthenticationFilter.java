@@ -30,8 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         // 1. Hat der Request einen "Authorization" Header, der mit "Bearer " anfängt?
         final String authHeader = request.getHeader("Authorization");
@@ -43,11 +42,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 2. Token extrahieren (ab dem 7. Zeichen, da "Bearer " 7 Zeichen lang ist)
-        jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt);
+        try {
+            // 2. Token extrahieren (ab dem 7. Zeichen, da "Bearer " 7 Zeichen lang ist)
+            jwt = authHeader.substring(7);
+            username = jwtService.extractUsername(jwt);
+        } catch (Exception e) {
+            // Token ist ungültig (z.B. abgelaufen oder manipuliert)
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-        // 3. Wenn ein Name im Token steht und der User noch NICHT im System authentifiziert ist...
+        // 3. Wenn ein Name im Token steht und der User noch NICHT im System
+        // authentifiziert ist...
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             // Lade den User aus der Datenbank
@@ -60,8 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
-                        userDetails.getAuthorities()
-                );
+                        userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 // User im "Tresor" (Security Context) für diesen Request speichern

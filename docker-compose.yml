@@ -1,6 +1,6 @@
 services:
   postgres-db:
-    image: postgres:15
+    image: postgres:16-alpine
     container_name: sparkcore-postgres
     environment:
       POSTGRES_USER: sparkcore_user
@@ -8,3 +8,13 @@ services:
       POSTGRES_DB: sparkcore_db
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sparkcore_user -d sparkcore_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

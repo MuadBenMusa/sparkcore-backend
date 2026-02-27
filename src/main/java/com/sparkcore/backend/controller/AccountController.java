@@ -21,8 +21,9 @@ public class AccountController {
         this.accountService = accountService;
     }
 
-    // neues Konto anlegen
+    // neues Konto anlegen – nur für Bankmitarbeiter (ADMIN)
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Account> createAccount(@Valid @RequestBody CreateAccountRequest request) {
         Account createdAccount = accountService.createAccount(
                 request.ownerName(),

@@ -1,26 +1,38 @@
 spring:
-  # 1. Sagt Spring Boot, dass es lokal zusätzlich die application-local.yaml laden soll
+  # 1. Lokales Profil laden (application-local.yaml) – lädt DB-Passwörter & Secrets
   profiles:
     active: local
 
-  # 2. Datenbank-Konfiguration mit sicheren Platzhaltern
+  # 2. Datenbankverbindung – Werte MÜSSEN als Env-Vars oder im lokalen Profil gesetzt sein
   datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME:sparkcore_db}
-    username: ${DB_USERNAME:sparkcore_user}
-    password: ${DB_PASSWORD:super_secret_password}
+    url: jdbc:postgresql://localhost:5432/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
-  # 3. Hibernate (Übersetzer zwischen Java und Datenbank)
+  # 3. Hibernate – validiert das Schema (Flyway übernimmt die Erstellung)
+  #    show-sql und format_sql nur im lokalen Profil aktivieren!
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+      ddl-auto: validate
 
-# 4. Security & JWT Konfiguration
+  # 4. Flyway – automatische Datenbankmigrationen
+  flyway:
+    enabled: true
+
+# 5. JWT Konfiguration – Secret MUSS als Env-Var JWT_SECRET gesetzt sein!
 application:
   security:
     jwt:
-      secret-key: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      secret-key: ${JWT_SECRET}
+
+# 6. Spring Boot Actuator – nur sichere Endpunkte öffentlich
+#    Weitere Endpunkte (env, beans, conditions) nur über Env-Var oder lokales Profil aktivieren
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

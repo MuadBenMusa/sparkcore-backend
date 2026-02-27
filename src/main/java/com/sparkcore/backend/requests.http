@@ -52,8 +52,8 @@ POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
 
 {
-  "username": "admin_max",
-  "password": "super_secret_password",
+  "username": "admin",
+  "password": "super_secret",
   "role": "ADMIN"
 }
 
@@ -81,8 +81,8 @@ POST http://localhost:8080/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin_max",
-  "password": "super_secret_password"
+  "username": "admin",
+  "password": "super_secret"
 }
 
 ### 3. Gesichertes Konto erstellen (MIT TOKEN!)
@@ -109,7 +109,7 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3N
 
 ### 5. Überweisung durchführen (150.50 von Max an Lisa)
 POST http://localhost:8080/api/v1/accounts/transfer
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzE5NjcwODEsImV4cCI6MTc3MjA1MzQ4MX0.84xd0-j3JpxxRfvr3djuzMNvG_HElsRtQi-gR9UePewNwLzZ6SSKo2mT2q8pPfmu
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE1MjYxMiwiZXhwIjoxNzcyMjM5MDEyfQ.iMw2_tiA8YZ_AmEFQUEzVkHo01QtDs3fPOJOUfvG39_ytDVC6QNH2xI4o3FH8-5v
 Content-Type: application/json
 
 {
@@ -120,13 +120,13 @@ Content-Type: application/json
 
 ###
 GET http://localhost:8080/api/v1/accounts/DE12345678901234567890/transactions
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzE5NjcyOTMsImV4cCI6MTc3MjA1MzY5M30.jlo-kPs32ixAZhpuevxIRAD8Bre9TS6MhBbz8CU7iPGjzuWR0aAxo4bg_OAaUbRP
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjE1Mjg1OCwiZXhwIjoxNzcyMjM5MjU4fQ.mj_WrX1RR6QnG-5UXF1wMWqU07OZ01tlQaMI8E5e0OTpMIva4IsfVWGKrKYNtuh4
 
 ### 3. Alle Konten abrufen
 GET http://localhost:8080/api/v1/accounts
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzE5NjcyOTMsImV4cCI6MTc3MjA1MzY5M30.jlo-kPs32ixAZhpuevxIRAD8Bre9TS6MhBbz8CU7iPGjzuWR0aAxo4bg_OAaUbRP
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzIxNTI1MzMsImV4cCI6MTc3MjIzODkzM30.Evjm1rxgcduMmbcODZG1Z_k9Qyz2AY_2iRM73ZaYb1STEao0t39TFATvPwnTydT-
 
 ### 4. Alle audit-logs abrufen
 GET http://localhost:8080/api/v1/audit-logs
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzE5NjcyOTMsImV4cCI6MTc3MjA1MzY5M30.jlo-kPs32ixAZhpuevxIRAD8Bre9TS6MhBbz8CU7iPGjzuWR0aAxo4bg_OAaUbRP
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbl9tYXgiLCJpYXQiOjE3NzIxNTI1MzMsImV4cCI6MTc3MjIzODkzM30.Evjm1rxgcduMmbcODZG1Z_k9Qyz2AY_2iRM73ZaYb1STEao0t39TFATvPwnTydT-
 

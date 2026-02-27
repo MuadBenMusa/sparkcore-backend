@@ -13,8 +13,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import com.sparkcore.backend.util.RequestUtils; // NEU
 
 // Registrierung und Login – gibt bei Erfolg immer ein JWT zurück
 @Service
@@ -35,11 +34,6 @@ public class AuthService {
         this.auditLogRepository = auditLogRepository;
     }
 
-    private String getClientIp() {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        return (attributes != null) ? attributes.getRequest().getRemoteAddr() : "UNKNOWN_IP";
-    }
-
     public AuthResponse register(RegisterRequest request) {
         // Username schon vergeben?
         if (userRepository.findByUsername(request.username()).isPresent()) {
@@ -49,7 +43,7 @@ public class AuthService {
         AppUser newUser = new AppUser(
                 request.username(),
                 passwordEncoder.encode(request.password()),
-                Role.USER);
+                Role.USER); // Role is always USER – never client-controlled
         userRepository.save(newUser);
 
         String jwtToken = jwtService.generateToken(newUser.getUsername());
@@ -66,7 +60,7 @@ public class AuthService {
             auditLogRepository.save(new AuditLog(
                     request.username(), "LOGIN_FAILED",
                     "Ungültige Anmeldedaten",
-                    getClientIp(), "FAILURE"));
+                    RequestUtils.getClientIp(), "FAILURE"));
             throw e; // Fehler weiterwerfen, damit der Controller abbricht
         }
 
@@ -74,7 +68,7 @@ public class AuthService {
         auditLogRepository.save(new AuditLog(
                 request.username(), "LOGIN_SUCCESS",
                 "Erfolgreich angemeldet",
-                getClientIp(), "SUCCESS"));
+                RequestUtils.getClientIp(), "SUCCESS"));
 
         AppUser user = userRepository.findByUsername(request.username()).orElseThrow();
         String jwtToken = jwtService.generateToken(user.getUsername());

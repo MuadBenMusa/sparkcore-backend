@@ -51,14 +51,24 @@ This starts a PostgreSQL 15 container (`sparkcore-postgres`) on port `5432`.
 
 ### 2. Configure Local Secrets
 
-Create `src/main/resources/application-local.yaml` (never commit this file):
+Create `src/main/resources/application-local.yaml` (never commit this file). This file contains all sensitive configuration and development-only overrides:
 
 ```yaml
-DB_NAME: sparkcore_db
-DB_USERNAME: sparkcore_user
-DB_PASSWORD: your_db_password
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sparkcore_db
+    username: sparkcore_user
+    password: super_secret_password
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
-JWT_SECRET: your_256bit_hex_secret_key
+application:
+  security:
+    jwt:
+      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
 ```
 
 ### 3. Run the Application
