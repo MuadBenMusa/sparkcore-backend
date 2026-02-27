@@ -71,6 +71,8 @@ application:
       secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
 ```
 
+> **Note on SQL Logging:** The configuration above sets `show-sql: true` which prints every database query to the console (useful for development!). If you find this too noisy, simply change `show-sql` to `false`.
+
 ### 3. Run the Application
 
 ```bash
