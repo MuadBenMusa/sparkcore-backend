@@ -6,6 +6,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -13,6 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 // Hibernate übernimmt das Schema-Management (create-drop) im Test-Kontext.
 @SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Testcontainers
 class SparkcoreBackendApplicationTests {
 

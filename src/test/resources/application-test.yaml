@@ -12,6 +12,11 @@ spring:
     username: test_user
     password: test_password
     driver-class-name: org.postgresql.Driver
+    # Sofortige Verbindungs-Trennung für Unit Tests (verhindert Surefire Timeout Kill)
+    hikari:
+      maximum-pool-size: 2
+      connection-timeout: 2000
+      max-lifetime: 10000
   
   jpa:
     hibernate:
