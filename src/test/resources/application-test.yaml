@@ -1,0 +1,23 @@
+# ============================================================
+# TEST CONFIGURATION
+# Used exclusively during `mvn test` and CI pipelines.
+# ============================================================
+
+spring:
+  # The database URLs/credentials will be overridden dynamically by Testcontainers,
+  # but Spring Boot needs valid placeholders here so it doesn't fail on startup
+  # due to the unresolvable ${DB_NAME} properties in application.yaml.
+  datasource:
+    url: jdbc:postgresql://localhost:5432/test_db
+    username: test_user
+    password: test_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+application:
+  security:
+    jwt:
+      secret-key: test_secret_key_that_is_long_enough_for_hs256_12345678901234567890

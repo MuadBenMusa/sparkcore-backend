@@ -5,12 +5,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 // Beweist: Die Anwendung startet korrekt mit einer echten Postgres-Datenbank.
 // Hibernate übernimmt das Schema-Management (create-drop) im Test-Kontext.
 @SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+@ActiveProfiles("test")
 @Testcontainers
 class SparkcoreBackendApplicationTests {
 
