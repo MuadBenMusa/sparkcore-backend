@@ -23,9 +23,16 @@ class SparkcoreBackendApplicationTests {
 
 	@DynamicPropertySource
 	static void configureProperties(DynamicPropertyRegistry registry) {
+		// Datasource → Testcontainer
 		registry.add("spring.datasource.url", postgres::getJdbcUrl);
 		registry.add("spring.datasource.username", postgres::getUsername);
 		registry.add("spring.datasource.password", postgres::getPassword);
+		// Flyway explizit → gleicher Testcontainer
+		// (nötig, da application-local.yaml in CI nicht existiert und
+		// spring.flyway.* sonst auf localhost:5432 zeigt)
+		registry.add("spring.flyway.url", postgres::getJdbcUrl);
+		registry.add("spring.flyway.user", postgres::getUsername);
+		registry.add("spring.flyway.password", postgres::getPassword);
 	}
 
 	@Test
