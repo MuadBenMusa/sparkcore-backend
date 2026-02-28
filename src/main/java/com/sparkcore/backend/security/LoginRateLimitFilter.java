@@ -28,11 +28,10 @@ import java.util.Map;
 public class LoginRateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimiterService rateLimiterService;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public LoginRateLimitFilter(RateLimiterService rateLimiterService, ObjectMapper objectMapper) {
+    public LoginRateLimitFilter(RateLimiterService rateLimiterService) {
         this.rateLimiterService = rateLimiterService;
-        this.objectMapper = objectMapper;
     }
 
     // Filter nur für den Login-Endpunkt aktivieren
