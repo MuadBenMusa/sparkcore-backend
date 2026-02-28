@@ -2,6 +2,7 @@ package com.sparkcore.backend.config;
 
 import com.sparkcore.backend.security.JwtAuthenticationFilter;
 import com.sparkcore.backend.security.LoginRateLimitFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -51,6 +52,18 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // Verhindert Doppelregistrierung: @Component registriert den Filter automatisch
+    // als
+    // Servlet-Filter – hier deaktivieren, damit er NUR über die SecurityFilterChain
+    // läuft.
+    @Bean
+    public FilterRegistrationBean<LoginRateLimitFilter> rateLimitFilterRegistration(
+            LoginRateLimitFilter filter) {
+        FilterRegistrationBean<LoginRateLimitFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
 }
