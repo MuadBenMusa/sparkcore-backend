@@ -18,6 +18,9 @@ WORKDIR /app
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 
+# Ausführungsrechte setzen (nötig, da mvnw auf Windows ohne +x-Bit committed wird)
+RUN chmod +x ./mvnw
+
 # Nur Abhängigkeiten herunterladen (wird gecacht, solange pom.xml gleich bleibt)
 RUN ./mvnw dependency:go-offline -q
 
