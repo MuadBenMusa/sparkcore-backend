@@ -1,6 +1,6 @@
-name: Spring Boot CI/CD Pipeline
+name: CI Pipeline
 
-# Wird bei jedem 'Push' oder 'Pull Request' auf den 'main' Branch ausgeführt
+# Wird bei jedem Push oder Pull Request auf 'main' ausgeführt
 on:
   push:
     branches: [ "main" ]
@@ -8,23 +8,72 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-test:
-    # Die Pipeline wird auf einer aktuellen Ubuntu-Instanz ausgeführt
+  # ── Job 1: Tests ──────────────────────────────────────────
+  test:
+    name: Build & Test
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Holt den Code von GitHub auf den unsichtbaren Server
+      # 1. Code auschecken
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Installiert Java 21 (genau wie auf deinem PC)
+      # 2. Java 21 installieren (gleiche Version wie lokal)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven # Macht zukünftige Durchläufe viel schneller!
+          # Maven-Abhängigkeiten cachen – macht Folge-Runs deutlich schneller
+          cache: maven
 
-      # 3. Führt alle JUnit-Tests aus
-      - name: Run Maven Tests
-        run: mvn clean test
+      # 3. Maven Wrapper ausführbar machen (wichtig für Linux)
+      - name: Make mvnw executable
+        run: chmod +x ./mvnw
+
+      # 4. Alle Tests ausführen
+      #    Testcontainers startet automatisch einen PostgreSQL-Container –
+      #    kein externer Datenbankdienst nötig!
+      - name: Run Tests
+        run: ./mvnw clean test
+        env:
+          # Sicherstellen, dass kein lokales Profil aktiviert wird
+          SPRING_PROFILES_ACTIVE: test
+          # JWT-Secret für den Test-Kontext
+          JWT_SECRET: ci_test_secret_key_that_is_long_enough_for_hs384_algorithm_1234
+
+      # 5. Testergebnisse als Artefakt speichern (auch bei Fehlern sichtbar)
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: target/surefire-reports/
+          retention-days: 7
+
+  # ── Job 2: Docker Build ───────────────────────────────────
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    # Nur bauen wenn alle Tests grün sind
+    needs: test
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Docker Buildx für optimiertes Caching
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Docker Image bauen (ohne Push – kein Registry-Login nötig)
+      # Bei Bedarf: Login zu GitHub Container Registry oder Docker Hub hinzufügen
+      - name: Build Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: sparkcore-backend:${{ github.sha }}
+          # Build-Cache zwischen Runs teilen – spart Build-Minuten
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
