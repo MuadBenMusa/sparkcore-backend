@@ -13,6 +13,7 @@ spring:
   # 3. Hibernate – validiert das Schema (Flyway übernimmt die Erstellung)
   #    show-sql und format_sql nur im lokalen Profil aktivieren!
   jpa:
+    open-in-view: false   # verhindert lazy-load Queries außerhalb der Service-Schicht
     hibernate:
       ddl-auto: validate
 
