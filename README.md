@@ -129,10 +129,16 @@ Once running, explore the fully documented OpenAPI standard UI:
 
 ### Core Endpoints
 
-| Method | Endpoint | Description | Auth Required |
+| Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| `POST` | `/api/v1/auth/login` | Returns Access (15m) & Refresh (7d) Token | None |
+| `POST` | `/api/v1/auth/register` | Register a new user | Public |
+| `POST` | `/api/v1/auth/login` | Returns Access (15 min) & Refresh (7 day) Token | Public |
 | `POST` | `/api/v1/auth/refresh` | Rotates the Access & Refresh Tokens | Token |
-| `POST` | `/api/v1/auth/logout` | Revokes the Refresh Token & Blacklists JWT | Token |
-| `POST` | `/api/v1/accounts/transfer` | Validates IBANs and transfers money safely | Token |
-| `GET` | `/api/v1/audit-logs` | Reads asynchronously processed Kafka logs | ADMIN |
+| `POST` | `/api/v1/auth/logout` | Blacklists JWT in Redis & revokes Refresh Token | Token |
+| `POST` | `/api/v1/accounts` | Create a bank account (IBAN auto-generated) | ADMIN |
+| `GET` | `/api/v1/accounts` | List all bank accounts | ADMIN |
+| `GET` | `/api/v1/accounts/{id}` | Get account by ID | Token |
+| `POST` | `/api/v1/accounts/transfer` | Transfer money (validates @ValidIban, @Transactional) | USER |
+| `GET` | `/api/v1/accounts/{iban}/transactions` | Get transaction history for an IBAN | Token |
+| `GET` | `/api/v1/audit-logs` | Asynchronous Kafka-processed audit trail | ADMIN |
+| `GET` | `/api/v1/system/ping` | Health check | Public |

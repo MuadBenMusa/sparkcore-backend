@@ -4,6 +4,7 @@ import com.sparkcore.backend.model.AppUser;
 import com.sparkcore.backend.model.RefreshToken;
 import com.sparkcore.backend.repository.RefreshTokenRepository;
 import com.sparkcore.backend.repository.UserRepository;
+import com.sparkcore.backend.exception.RefreshTokenException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -52,7 +53,7 @@ public class RefreshTokenService {
                 .map(refreshToken -> {
                     if (refreshToken.getExpiryDate().compareTo(Instant.now()) < 0) {
                         refreshTokenRepository.delete(refreshToken);
-                        throw new RuntimeException("Refresh Token ist abgelaufen. Bitte neu anmelden.");
+                        throw new RefreshTokenException("Refresh Token ist abgelaufen. Bitte neu anmelden.");
                     }
                     return refreshToken;
                 });

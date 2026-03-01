@@ -47,7 +47,14 @@ public final class IbanUtils {
         // 4. Prüfsumme immer zweistellig formatieren (01 ... 97)
         String checkDigits = String.format("%02d", checksum);
 
-        return "DE" + checkDigits + bban;
+        String result = "DE" + checkDigits + bban;
+
+        // Selbst-Check: Schützt vor Logikfehlern in der Berechnung oben
+        if (!isValid(result)) {
+            throw new IllegalStateException("Generierte IBAN ist mathematisch ungültig: " + result);
+        }
+
+        return result;
     }
 
     /**

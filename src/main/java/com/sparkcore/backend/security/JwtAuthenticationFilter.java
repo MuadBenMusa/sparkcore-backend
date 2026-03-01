@@ -58,8 +58,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             username = jwtService.extractUsername(jwt);
         } catch (Exception e) {
-            // Token ist ungültig (z.B. abgelaufen oder manipuliert)
-            filterChain.doFilter(request, response);
+            // Token ist ungültig (abgelaufen, manipuliert, falsch formatiert)
+            // → Direkt 401 zurückgeben, nicht weiterleiten
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Ungültiges oder abgelaufenes Token. Bitte neu anmelden.\"}");
             return;
         }
 

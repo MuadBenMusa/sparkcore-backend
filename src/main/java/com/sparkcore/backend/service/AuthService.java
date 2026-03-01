@@ -3,6 +3,7 @@ package com.sparkcore.backend.service;
 import com.sparkcore.backend.dto.AuthRequest;
 import com.sparkcore.backend.dto.AuthResponse;
 import com.sparkcore.backend.dto.RegisterRequest;
+import com.sparkcore.backend.exception.RefreshTokenException;
 import com.sparkcore.backend.model.AppUser;
 import com.sparkcore.backend.model.AuditLog;
 import com.sparkcore.backend.model.Role;
@@ -96,12 +97,12 @@ public class AuthService {
 
                     return new AuthResponse(jwtToken, newRefreshToken);
                 })
-                .orElseThrow(() -> new RuntimeException("Refresh Token nicht in Datenbank gefunden!"));
+                .orElseThrow(() -> new RefreshTokenException("Refresh Token nicht gefunden oder bereits verwendet."));
     }
 
     public void logout(String authHeader, String username) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return;
+            throw new IllegalStateException("Logout erfordert einen gültigen Bearer-Token im Authorization-Header.");
         }
 
         String jwt = authHeader.substring(7);

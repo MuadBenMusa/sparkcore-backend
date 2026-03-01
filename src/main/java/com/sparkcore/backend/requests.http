@@ -1,29 +1,44 @@
 ### ============================================================
-### SparkCore Backend – API Test Requests
+### SparkCore Backend – Vollständiger API Test Suite
 ### ============================================================
 ###
 ### ANLEITUNG:
-### 1. Umgebung starten: docker-compose up -d
-### 2. App starten: ./mvnw spring-boot:run
-### 3. Request "Step 1: Admin Login" ausführen
-### 4. Den Token aus der Antwort kopieren und hier unter @admin_token eintragen!
+###  1. docker-compose up -d
+###  2. ./mvnw spring-boot:run
+###  3. Führe die Schritte 1–3 aus und trage die Tokens in die Variablen
+###     am Anfang dieser Datei ein.
+###
+### LEGENDE:  ✅ = Erwartet HTTP 2xx
+###           🔐 = Token erforderlich
+###           ❌ = Erwartet Fehler (4xx/5xx) — Security/Validation Test
 ### ============================================================
 
 @baseUrl = http://localhost:8080/api/v1
-@admin_token = LASS_LEER_WIRD_VON_SCHRITT_1_GESETZT
-@admin_refresh_token = LASS_LEER_WIRD_VON_SCHRITT_1_GESETZT
-@user_token = LASS_LEER_WIRD_VON_SCHRITT_3_GESETZT
-@user_refresh_token = LASS_LEER_WIRD_VON_SCHRITT_3_GESETZT
+
+# Hier nach Login eintragen:
+@admin_token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjQwMDU1NCwiZXhwIjoxNzcyNDAxNDU0fQ.FpQEp_PJNBJMEE7mnNd6wZmLEpEFbH4xdUhSrYhwYMyPzvbu0axhhNo8e6oqVEa6
+@admin_refresh_token = 547c1720-28a6-4345-83f6-0e1cb118d2a0
+@user_token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtYXhfbXVzdGVyIiwiaWF0IjoxNzcyNDAwNDcxLCJleHAiOjE3NzI0MDEzNzF9.Ezczo8ct8-zaYmgldv3XHpmqyH6bSXk4AVzRG0DfF-FI-wnwdqhuvGpC7tx0iKQe
+@user_refresh_token = 98bfa71c-7d7b-43cc-ad88-6959cded4710
+
+# Hier nach Schritt 4 & 5 eintragen:
+@iban_max = DE46100500000284667551
+@iban_lisa = DE26100500000563534181
+
 
 ### ============================================================
-### 1. SYSTEM & AUTHENTICATION
+### SECTION 1: SYSTEM HEALTH
 ### ============================================================
 
-### Ping – Öffentlich (kein Token nötig)
+### [1.1] ✅ Ping – Öffentlich zugänglich, kein Token nötig
 GET {{baseUrl}}/system/ping
 
-### Step 1: Admin Login → Generiert Access & Refresh Token für den Admin
-### (Kopiere accessToken in @admin_token und refreshToken in @admin_refresh_token)
+
+### ============================================================
+### SECTION 2: AUTHENTICATION
+### ============================================================
+
+### [2.1] ✅ Admin Login → Kopiere accessToken → @admin_token, refreshToken → @admin_refresh_token
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
@@ -32,7 +47,9 @@ Content-Type: application/json
   "password": "super_secret"
 }
 
-### Step 2: Neuen User registrieren (kein Token nötig)
+###
+
+### [2.2] ✅ Neuen User registrieren
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
@@ -41,8 +58,9 @@ Content-Type: application/json
   "password": "geheimesPasswort123"
 }
 
-### Step 3: User Login → Generiert Access & Refresh Token für Max Muster
-### (Kopiere accessToken in @user_token und refreshToken in @user_refresh_token)
+###
+
+### [2.3] ✅ Max Muster Login → Kopiere accessToken → @user_token, refreshToken → @user_refresh_token
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
@@ -51,12 +69,88 @@ Content-Type: application/json
   "password": "geheimesPasswort123"
 }
 
+###
+
+### [2.4] ✅ Access Token auffrischen (Refresh Token Rotation)
+### Nutze wenn @user_token nach 15 Minuten abläuft.
+### Antwort enthält neues accessToken UND neues refreshToken!
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{user_refresh_token}}"
+}
+
+###
+
+### [2.5] ✅ 🔐 Logout – Token wird sofort in Redis gesperrt (Blacklist)
+### Danach: Teste [2.6] um sicherzustellen, dass das Token wirklich gesperrt ist!
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{user_token}}
+
+###
+
+### [2.6] ❌ Blacklist-Test: Gesperrter Token muss 401 zurückgeben
+### NUR ausführen NACHDEM [2.5] Logout ausgeführt wurde!
+### Erwartete Antwort: 401 Unauthorized mit "Token wurde widerrufen (Logout)."
+GET {{baseUrl}}/accounts
+Authorization: Bearer {{admin_token}}
+
 
 ### ============================================================
-### 2. ACCOUNT MANAGEMENT (Erfordert Token)
+### SECTION 3: SECURITY – AUTH ERROR CASES
 ### ============================================================
 
-### Step 4: Erstes Konto erstellen (Admin-Token erforderlich)
+### [3.1] ❌ Login mit falschem Passwort → 401 Unauthorized
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "FALSCHES_PASSWORT"
+}
+
+###
+
+### [3.2] ❌ Register mit leerem Passwort → 400 Bad Request (Bean Validation)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "bad_user",
+  "password": ""
+}
+
+###
+
+### [3.3] ❌ Refresh mit ungültigem/altem Token → 400 Bad Request (RefreshTokenException)
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "this-is-not-a-valid-refresh-token"
+}
+
+###
+
+### [3.4] ❌ Rate Limiting Test (Brute Force Simulation)
+### Klicke 6x schnell hintereinander auf diesen Request.
+### Ab Anfrage 6: Erwartete Antwort ist 429 Too Many Requests!
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "wrong_password_brute_force_test"
+}
+
+
+### ============================================================
+### SECTION 4: ACCOUNT MANAGEMENT
+### ============================================================
+
+### [4.1] ✅ 🔐 Konto für Max Mustermann anlegen (UUID IBAN wird generiert)
+### → Kopiere die IBAN aus der Antwort in @iban_max
 POST {{baseUrl}}/accounts
 Content-Type: application/json
 Authorization: Bearer {{admin_token}}
@@ -66,7 +160,10 @@ Authorization: Bearer {{admin_token}}
   "initialBalance": 1000.50
 }
 
-### Step 5: Zweites Konto erstellen (Admin-Token erforderlich)
+###
+
+### [4.2] ✅ 🔐 Konto für Lisa Müller anlegen
+### → Kopiere die IBAN aus der Antwort in @iban_lisa
 POST {{baseUrl}}/accounts
 Content-Type: application/json
 Authorization: Bearer {{admin_token}}
@@ -76,49 +173,104 @@ Authorization: Bearer {{admin_token}}
   "initialBalance": 500.00
 }
 
-### Step 6: Alle Konten abrufen (Admin-Token erforderlich)
+###
+
+### [4.3] ✅ 🔐 Alle Konten abrufen (Admin-Only)
 GET {{baseUrl}}/accounts
 Authorization: Bearer {{admin_token}}
 
+###
+
+### [4.4] ✅ 🔐 Einzelnes Konto per ID abrufen
+GET {{baseUrl}}/accounts/1
+Authorization: Bearer {{admin_token}}
+
+###
+
+### [4.5] ❌ GET nicht-existierendes Konto → 404 Not Found
+GET {{baseUrl}}/accounts/999999
+Authorization: Bearer {{admin_token}}
+
+###
+
+### [4.6] ❌ USER versucht alle Konten abzurufen → 403 Forbidden (ADMIN-Only)
+GET {{baseUrl}}/accounts
+Authorization: Bearer {{user_token}}
+
 
 ### ============================================================
-### 3. TRANSACTIONS & AUDIT (Erfordert Token)
+### SECTION 5: TRANSACTIONS
 ### ============================================================
 
-### Step 7: Überweisung – Max → Lisa (150.50 EUR)
-### WICHTIG: Kopiere die echten generierten IBANs aus den Schritten 4 & 5 hierher!
+### [5.1] ✅ 🔐 Überweisung: Max → Lisa (150.50 EUR)
+### WICHTIG: Trage die echten IBANs aus Schritt 4 & 5 in @iban_max und @iban_lisa ein!
 POST {{baseUrl}}/accounts/transfer
 Content-Type: application/json
 Authorization: Bearer {{user_token}}
 
 {
-  "fromIban": "KOLPIERT_VON_SCHRITT_4",
-  "toIban": "KOPIERT_VON_SCHRITT_5",
+  "fromIban": "{{iban_max}}",
+  "toIban": "{{iban_lisa}}",
   "amount": 150.50
 }
 
-### Step 8: Kontoauszug für Max – alle Transaktionen (IBAN aus Schritt 4 einfügen)
-GET {{baseUrl}}/accounts/KOLPIERT_VON_SCHRITT_4/transactions
+###
+
+### [5.2] ✅ 🔐 Transaktionshistorie für Max (nach der Überweisung in 5.1)
+GET {{baseUrl}}/accounts/{{iban_max}}/transactions
 Authorization: Bearer {{user_token}}
 
+###
 
-### Step 9: Alle Audit-Logs abrufen (Admin-Token erforderlich)
+### [5.3] ❌ Überweisung mit falschem IBAN-Format → 400 Bad Request (@ValidIban)
+POST {{baseUrl}}/accounts/transfer
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "fromIban": "KEINE_ECHTE_IBAN",
+  "toIban": "{{iban_lisa}}",
+  "amount": 10.00
+}
+
+###
+
+### [5.4] ❌ Überweisung mit zu wenig Geld → 400 Bad Request (Insufficient Funds)
+POST {{baseUrl}}/accounts/transfer
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "fromIban": "{{iban_max}}",
+  "toIban": "{{iban_lisa}}",
+  "amount": 999999.99
+}
+
+###
+
+### [5.5] ❌ ADMIN versucht Überweisung → 403 Forbidden (USER-Only)
+POST {{baseUrl}}/accounts/transfer
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "fromIban": "{{iban_max}}",
+  "toIban": "{{iban_lisa}}",
+  "amount": 10.00
+}
+
+
+### ============================================================
+### SECTION 6: AUDIT LOGS
+### ============================================================
+
+### [6.1] ✅ 🔐 Alle Audit-Logs abrufen (Admin-Only)
+### Hier sollten Login-Events und Transaktions-Events sichtbar sein!
 GET {{baseUrl}}/audit-logs
 Authorization: Bearer {{admin_token}}
 
+###
 
-### ============================================================
-### 4. SECURITY TESTS (Redis Rate Limiting)
-### ============================================================
-
-### Step 10: Redis Rate Limiting Test (Brute Force Simulation)
-### ANLEITUNG: Klicke 6 mal extrem schnell hintereinander auf diesen Request.
-### Die ersten 5 werden "401 Unauthorized" zurückgeben (falsches Passwort).
-### Der 6. Request MUSS "429 Too Many Requests" zurückgeben!
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "wrong_password_to_test_limit"
-}
+### [6.2] ❌ USER versucht Audit-Logs abzurufen → 403 Forbidden
+GET {{baseUrl}}/audit-logs
+Authorization: Bearer {{user_token}}

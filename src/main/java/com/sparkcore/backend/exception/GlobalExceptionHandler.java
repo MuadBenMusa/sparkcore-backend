@@ -26,6 +26,18 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    // 1b. Fängt ungültige/abgelaufene Refresh Tokens ab → 400 Bad Request
+    @ExceptionHandler(RefreshTokenException.class)
+    public ResponseEntity<Map<String, Object>> handleRefreshTokenException(RefreshTokenException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Invalid Refresh Token");
+        errorResponse.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     // 2. NEU: Fängt Validierungs-Fehler ab (z.B. leere IBAN im DTO)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
