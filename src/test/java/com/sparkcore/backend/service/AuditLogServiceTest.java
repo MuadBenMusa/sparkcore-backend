@@ -9,6 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 
+import com.sparkcore.backend.dto.TransactionEvent;
+import org.mockito.ArgumentCaptor;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,5 +46,31 @@ class AuditLogServiceTest {
 
         // Prüfen, ob das Repository mit der korrekten Sortierung aufgerufen wurde
         verify(auditLogRepository, times(1)).findAll(Sort.by(Sort.Direction.DESC, "timestamp"));
+    }
+
+    @Test
+    void testConsumeTransactionEvent_SavesAuditLog() {
+        // --- 1. ARRANGE ---
+        TransactionEvent event = new TransactionEvent(
+                "TRANSFER",
+                "DE123",
+                "DE456",
+                new BigDecimal("100.00"),
+                "SUCCESS",
+                "testuser",
+                "127.0.0.1");
+
+        // --- 2. ACT ---
+        auditLogService.consumeTransactionEvent(event);
+
+        // --- 3. ASSERT & VERIFY ---
+        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogRepository, times(1)).save(captor.capture());
+
+        AuditLog savedLog = captor.getValue();
+        assertEquals("testuser", savedLog.getUsername());
+        assertEquals("TRANSFER", savedLog.getAction());
+        assertEquals("SUCCESS", savedLog.getStatus());
+        assertEquals("127.0.0.1", savedLog.getIpAddress());
     }
 }

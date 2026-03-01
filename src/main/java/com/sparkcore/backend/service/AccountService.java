@@ -1,7 +1,6 @@
 package com.sparkcore.backend.service;
 
 import com.sparkcore.backend.model.Account;
-import com.sparkcore.backend.model.AuditLog;
 import com.sparkcore.backend.model.Transaction;
 import com.sparkcore.backend.repository.AccountRepository;
 import com.sparkcore.backend.repository.TransactionRepository;
