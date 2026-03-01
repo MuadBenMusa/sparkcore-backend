@@ -10,8 +10,10 @@
 ### ============================================================
 
 @baseUrl = http://localhost:8080/api/v1
-@admin_token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjMyNTQyOSwiZXhwIjoxNzcyNDExODI5fQ.vq5XOPRfFo8vy6x-4YdzFOKNacBlP4_h0dzzOu93Pi4AOO4k65g_lUIe1Q5bkmb1
-@user_token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtYXhfbXVzdGVyIiwiaWF0IjoxNzcyMzI1NDY5LCJleHAiOjE3NzI0MTE4Njl9.Cih4MMmWkFwnfKmS_LSHBd1oTqqfC5TIuohumek62RRHDM6v0lXQKA0jh-a-G1bb
+@admin_token = LASS_LEER_WIRD_VON_SCHRITT_1_GESETZT
+@admin_refresh_token = LASS_LEER_WIRD_VON_SCHRITT_1_GESETZT
+@user_token = LASS_LEER_WIRD_VON_SCHRITT_3_GESETZT
+@user_refresh_token = LASS_LEER_WIRD_VON_SCHRITT_3_GESETZT
 
 ### ============================================================
 ### 1. SYSTEM & AUTHENTICATION
@@ -20,7 +22,8 @@
 ### Ping – Öffentlich (kein Token nötig)
 GET {{baseUrl}}/system/ping
 
-### Step 1: Admin Login → Generiert Token für @admin_token
+### Step 1: Admin Login → Generiert Access & Refresh Token für den Admin
+### (Kopiere accessToken in @admin_token und refreshToken in @admin_refresh_token)
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
@@ -38,7 +41,8 @@ Content-Type: application/json
   "password": "geheimesPasswort123"
 }
 
-### Step 3: User Login → Generiert Token für @user_token
+### Step 3: User Login → Generiert Access & Refresh Token für Max Muster
+### (Kopiere accessToken in @user_token und refreshToken in @user_refresh_token)
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 

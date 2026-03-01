@@ -16,21 +16,22 @@ import java.util.function.Function;
 public class JwtService {
 
     // Ein geheimer Schlüssel (mindestens 256-bit), der NUR dem Server bekannt ist!
-    // In einer echten Bank läge dieser Key in einem sicheren "Vault" und niemals im Code.
+    // In einer echten Bank läge dieser Key in einem sicheren "Vault" und niemals im
+    // Code.
     @Value("${application.security.jwt.secret-key}")
     private String secretKey;
+
     // Bereitet den Schlüssel für die Verschlüsselung vor
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // Erstellt den JWT-Ausweis für einen bestimmten Nutzer
     public String generateToken(String username) {
         return Jwts.builder()
                 .subject(username) // Wer ist der Nutzer?
                 .issuedAt(new Date(System.currentTimeMillis())) // Ausgestellt jetzt
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // Gültig für 24 Stunden
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15)) // Gültig für 15 MINUTEN
                 .signWith(getSigningKey()) // Digitale Unterschrift der Bank
                 .compact();
     }
@@ -51,7 +52,7 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    private Date extractExpiration(String token) {
+    public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 

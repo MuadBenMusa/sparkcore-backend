@@ -44,6 +44,12 @@ class AuthServiceTest {
     @Mock
     private AuditLogRepository auditLogRepository;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -56,11 +62,17 @@ class AuthServiceTest {
         when(passwordEncoder.encode(request.password())).thenReturn("hashed_password");
         when(jwtService.generateToken(request.username())).thenReturn("mocked_jwt_token");
 
+        // Mock Refresh Token creation
+        com.sparkcore.backend.model.RefreshToken mockRefreshToken = new com.sparkcore.backend.model.RefreshToken();
+        mockRefreshToken.setToken("mocked_refresh_token");
+        when(refreshTokenService.createRefreshToken(request.username())).thenReturn(mockRefreshToken);
+
         // --- 2. ACT ---
         AuthResponse response = authService.register(request);
 
         // --- 3. ASSERT & VERIFY ---
-        assertEquals("mocked_jwt_token", response.token());
+        assertEquals("mocked_jwt_token", response.accessToken());
+        assertEquals("mocked_refresh_token", response.refreshToken());
 
         // Prüfen, ob der User als Role.USER in die Datenbank gespeichert wurde
         ArgumentCaptor<AppUser> userCaptor = ArgumentCaptor.forClass(AppUser.class);
@@ -105,11 +117,16 @@ class AuthServiceTest {
         when(userRepository.findByUsername(request.username())).thenReturn(Optional.of(user));
         when(jwtService.generateToken(user.getUsername())).thenReturn("success_token");
 
+        com.sparkcore.backend.model.RefreshToken mockRefreshToken = new com.sparkcore.backend.model.RefreshToken();
+        mockRefreshToken.setToken("refresh_success_token");
+        when(refreshTokenService.createRefreshToken(user.getUsername())).thenReturn(mockRefreshToken);
+
         // --- 2. ACT ---
         AuthResponse response = authService.login(request);
 
         // --- 3. ASSERT & VERIFY ---
-        assertEquals("success_token", response.token());
+        assertEquals("success_token", response.accessToken());
+        assertEquals("refresh_success_token", response.refreshToken());
 
         // Prüfen, ob ein erfolgreiches Audit-Log geschrieben wurde
         ArgumentCaptor<AuditLog> logCaptor = ArgumentCaptor.forClass(AuditLog.class);

@@ -20,10 +20,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final com.sparkcore.backend.service.TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService,
+            com.sparkcore.backend.service.TokenBlacklistService tokenBlacklistService) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -45,6 +48,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // 2. Token extrahieren (ab dem 7. Zeichen, da "Bearer " 7 Zeichen lang ist)
             jwt = authHeader.substring(7);
+
+            // 2.5 BLACKLIST CHECK: Ist das Token ausgeloggt?
+            if (tokenBlacklistService.isBlacklisted(jwt)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token wurde widerrufen (Logout). Bitte neu anmelden.");
+                return;
+            }
+
             username = jwtService.extractUsername(jwt);
         } catch (Exception e) {
             // Token ist ungültig (z.B. abgelaufen oder manipuliert)

@@ -1,130 +1,135 @@
-# SparkCore Banking Backend
+# 🏛️ SparkCore Banking Architecture
 
-A RESTful banking backend API built with **Java 21** and **Spring Boot 4**, demonstrating enterprise-grade architecture patterns used in the financial industry.
+![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?&style=for-the-badge&logo=redis&logoColor=white)
+![Apache Kafka](https://img.shields.io/badge/Apache_Kafka-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)
 
----
+SparkCore is a high-performance, resilient, and secure financial backend API. This project demonstrates enterprise-grade architectural patterns, strict security mechanisms, and decoupled microservice communication standards heavily used in the banking sector.
 
-## Tech Stack
+## 🎯 Why I Built This
 
-| Layer | Technology |
-|---|---|
-| Language | Java 21 |
-| Framework | Spring Boot 4 |
-| Security | Spring Security + JWT (jjwt 0.12.5) |
-| Database | PostgreSQL 15 |
-| Caching & Rate Limiting | Redis + Bucket4j |
-| Event Streaming | Apache Kafka (KRaft Mode) |
-| ORM | Spring Data JPA / Hibernate |
-| Validation | Jakarta Bean Validation |
-| Documentation | SpringDoc OpenAPI / Swagger UI |
-| Containerization | Docker + Docker Compose |
-| Testing | JUnit 5 + Mockito + Testcontainers |
+I built SparkCore to prove that I don't just know how to write code, but how to design robust distributed systems. Banking applications face unique challenges: strict auditing requirements, high-frequency brute-force attacks, and absolute atomicity in transactions.
 
----
-
-## Features
-
-- **JWT Authentication** — Stateless token-based auth with BCrypt password hashing
-- **Role-Based Authorization** — `USER` and `ADMIN` roles enforced via `@PreAuthorize`
-- **Distributed Rate Limiting** — Global protection against brute-force attacks via Redis & Bucket4j
-- **Account Management** — Create and query bank accounts
-- **Money Transfers** — Transactional transfers with balance validation (`@Transactional`)
-- **Event-Driven Architecture** — Fully decoupled asynchronous transaction auditing via Apache Kafka
-- **Global Exception Handling** — Structured JSON error responses via `@ControllerAdvice`
-- **Input Validation** — All DTOs validated with `@Valid` + constraint annotations
-- **OpenAPI Docs** — Swagger UI with JWT bearer auth support
+This project addresses those challenges by implementing:
+*   **Dual-Token Security Architectures** with instant revocation.
+*   **Distributed Rate Limiting** to thwart credential stuffing across clusters.
+*   **Event-Driven Asynchronous Auditing** to ensure core transactions never block.
+*   **Mathematical Domain Logic** (ISO 13616 German IBAN Modulo-97 validation).
 
 ---
 
-## Getting Started
+## 🏗️ Architecture Diagram
+
+SparkCore leverages an Event-Driven Architecture (EDA) to decouple the core transactional `AccountService` from the slower, strictly-required `AuditLogService`.
+
+```mermaid
+graph TD
+    Client(Client App / Postman) -->|HTTPS/JSON| API[Spring Boot API]
+    
+    subgraph SparkCore Backend Node
+        API --> Auth[Auth Controller]
+        API --> Account[Account Controller]
+        
+        Auth --> JwtFilter(JWT+Redis Filter)
+        Account --> JwtFilter
+        
+        JwtFilter -- Checks Blacklist --> Redis[(Redis Token Cache)]
+        Auth -- Consume Token Bucket --> Redis
+        
+        Account -- Validates ISO-13616 --> CoreLogic[Account Service Core]
+        Auth -- Generates Access/Refresh --> AuthLogic[Auth Service Core]
+        
+        CoreLogic -- Writes Transaction --> DB[(PostgreSQL)]
+        AuthLogic -- Writes Refresh Token --> DB
+        
+        CoreLogic -- Produces Async Event --> Kafka[[Apache Kafka Broker]]
+    end
+
+    subgraph Independent Audit Consumer
+        Kafka -- Consumes Event --> AuditService[Audit Log Consumer]
+        AuditService -- Persists Log --> DB
+    end
+```
+
+---
+
+## 🔐 Key Architectural Decisions (ADRs)
+
+I believe senior engineers must document their trade-offs. You can find detailed Markdown Architecture Decision Records in the [`/docs/adr/`](/docs/adr/) folder.
+
+1.  **[ADR-0001: Statutory JWT Authentication]** - Why stateless validation scales infinitely better than server-side session stores.
+2.  **[ADR-0002: Redis Distributed Rate Limiting]** - Why `ConcurrentHashMap` fails in load-balanced environments and why Lettuce+Bucket4j is superior.
+3.  **[ADR-0003: Kafka Asynchronous Auditing]** - Why tight coupling transactions to audit logs destroys latency and how Event Streaming fixes it.
+4.  **[ADR-0004: Dual Token Architecture]** - How issuing 7-day Refresh Tokens and 15-minute Access Tokens with a Redis Blacklist solves the JWT revocation flaw.
+
+---
+
+## 🚀 Features
+
+### Security & Authentication
+- **Dual-Token Flow (Access + Refresh):** Minimized attack windows. Refresh tokens are stored safely, while rotated access tokens are verified statelessly.
+- **Stateful Logout (Redis):** Tokens are placed on a high-speed Redis Blacklist upon logout, rendering intercepted tokens useless instantly.
+- **Global Rate Limiting:** Bucket4j intercepts malicious API spammers globally via Redis, saving database cycles.
+
+### Core Banking Logic
+- **ISO-13616 IBAN Generation:** Accounts are automatically assigned mathematically valid German IBANs utilizing Modulo-97 calculations (ISO 7064).
+- **Custom Bean Validation (`@ValidIban`):** Automatically rejects transfers to fake/structurally-invalid IBANs on the HTTP layer.
+- **ACID Transactions:** Full Rollback capabilities on failed transfers via Spring's declarative `@Transactional`.
+
+### Observability & Quality
+- **100% Passing Integration Tests:** `Testcontainers` spins up real ephemeral instances of PostgreSQL, Redis, and Kafka for true integration coverage.
+- **Flyway Migrations:** Bulletproof, version-controlled database schemas.
+
+---
+
+## 🛠️ Getting Started
 
 ### Prerequisites
 - Docker Desktop
-- Java 21
-- Maven
+- Java 21+
 
-### 1. Start the Database
-
+### 1. Boot Infrastructure (Database, Cache, Broker)
 ```bash
 docker-compose up -d
 ```
-
-This starts a PostgreSQL 15 database, a Redis cache, and an Apache Kafka broker in the background.
+*(Starts Postgres 15, Redis 7, and Kafka 3.8 in KRaft mode)*
 
 ### 2. Configure Local Secrets
-
-Create `src/main/resources/application-local.yaml` (never commit this file). This file contains all sensitive configuration and development-only overrides:
-
+Create a `src/main/resources/application-local.yaml` (gitignored) to store your passwords safely:
 ```yaml
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/sparkcore_db
     username: sparkcore_user
-    password: super_secret_password
-  jpa:
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
+    password: my_secret_db_password
 application:
   security:
     jwt:
-      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      secret-key: [Your_Base64_256Bit_Secret]
 ```
 
-> **Note on SQL Logging:** The configuration above sets `show-sql: true` which prints every database query to the console (useful for development!). If you find this too noisy, simply change `show-sql` to `false`.
-
-### 3. Run the Application
-
+### 3. Run the Backend
 ```bash
 ./mvnw spring-boot:run
 ```
 
-The API will be available at `http://localhost:8080`.
-
 ---
 
-## API Overview
+## 📚 API interactive Documentation
 
-| Method | Endpoint | Role | Description |
+Once running, explore the fully documented OpenAPI standard UI:
+👉 **[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**
+
+### Core Endpoints
+
+| Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Public | Register a new user |
-| `POST` | `/api/v1/auth/login` | Public | Login and receive JWT |
-| `POST` | `/api/v1/accounts` | Auth | Create a bank account |
-| `GET` | `/api/v1/accounts` | ADMIN | List all accounts |
-| `GET` | `/api/v1/accounts/{id}` | Auth | Get account by ID |
-| `POST` | `/api/v1/accounts/transfer` | USER | Transfer money |
-| `GET` | `/api/v1/accounts/{iban}/transactions` | Auth | Transaction history |
-| `GET` | `/api/v1/audit-logs` | ADMIN | View full audit trail |
-| `GET` | `/api/v1/system/ping` | Public | Health check |
-
-Full interactive documentation: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-
----
-
-## Project Structure
-
-```
-src/main/java/com/sparkcore/backend/
-├── config/          # Spring Security & OpenAPI configuration
-├── controller/      # REST controllers (HTTP layer only)
-├── dto/             # Request/Response data transfer objects
-├── exception/       # Global exception handler
-├── model/           # JPA entities (Account, AppUser, Transaction, AuditLog)
-├── repository/      # Spring Data JPA repositories
-├── security/        # JWT filter and service
-└── service/         # Business logic (AccountService, AuthService)
-```
-
----
-
-## Architecture Decisions
-
-- **Layered architecture** — strict separation between Controller, Service, and Repository layers
-- **Event-Driven Microservices Design** — `AccountService` does not depend on `AuditLogService`. It produces Kafka events (`TransactionEvent`), allowing for massive horizontal scalability.
-- **Stateless sessions** — no server-side session state; every request is authenticated via JWT
-- **Distributed Limits** — `ConcurrentHashMap` was replaced by Redis/Bucket4j `ProxyManager` so IP limits are shared globally across all API instances.
-- **Immutable audit records** — `AuditLog` and `Transaction` entities have no setters
-- **`@Transactional` on transfers** — guarantees atomicity; if anything fails mid-transfer, the database rolls back automatically
-- **Secrets via environment variables** — no credentials in source code; all secrets/db connections are injected at runtime
+| `POST` | `/api/v1/auth/login` | Returns Access (15m) & Refresh (7d) Token | None |
+| `POST` | `/api/v1/auth/refresh` | Rotates the Access & Refresh Tokens | Token |
+| `POST` | `/api/v1/auth/logout` | Revokes the Refresh Token & Blacklists JWT | Token |
+| `POST` | `/api/v1/accounts/transfer` | Validates IBANs and transfers money safely | Token |
+| `GET` | `/api/v1/audit-logs` | Reads asynchronously processed Kafka logs | ADMIN |
