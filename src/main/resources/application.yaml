@@ -21,6 +21,11 @@ spring:
   flyway:
     enabled: true
 
+  # 5. Redis – In-Memory Database für Rate Limiting und Caches
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+
 # 5. JWT Konfiguration – Secret MUSS als Env-Var JWT_SECRET gesetzt sein!
 application:
   security:

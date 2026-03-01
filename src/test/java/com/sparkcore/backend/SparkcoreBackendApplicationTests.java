@@ -10,7 +10,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-// Beweist: Die Anwendung startet korrekt mit einer echten Postgres-Datenbank.
+import org.testcontainers.containers.GenericContainer;
+
+// Beweist: Die Anwendung startet korrekt mit echten Postgres- & Redis-Datenbanken.
 // Hibernate übernimmt das Schema-Management (create-drop) im Test-Kontext.
 @SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @ActiveProfiles("test")
@@ -21,6 +23,10 @@ class SparkcoreBackendApplicationTests {
 	@Container
 	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
+	@Container
+	static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
+			.withExposedPorts(6379);
+
 	@DynamicPropertySource
 	static void configureProperties(DynamicPropertyRegistry registry) {
 		// Datasource → Testcontainer
@@ -28,16 +34,19 @@ class SparkcoreBackendApplicationTests {
 		registry.add("spring.datasource.username", postgres::getUsername);
 		registry.add("spring.datasource.password", postgres::getPassword);
 		// Flyway explizit → gleicher Testcontainer
-		// (nötig, da application-local.yaml in CI nicht existiert und
-		// spring.flyway.* sonst auf localhost:5432 zeigt)
 		registry.add("spring.flyway.url", postgres::getJdbcUrl);
 		registry.add("spring.flyway.user", postgres::getUsername);
 		registry.add("spring.flyway.password", postgres::getPassword);
+
+		// Redis → Testcontainer
+		registry.add("spring.redis.host", redis::getHost);
+		registry.add("spring.redis.port", redis::getFirstMappedPort);
 	}
 
 	@Test
 	void contextLoads() {
-		System.out.println("✅ Spring-Kontext läuft mit echter Datenbank!");
+		System.out.println("✅ Spring-Kontext läuft mit Postgres & Redis!");
 		System.out.println("Postgres Port: " + postgres.getFirstMappedPort());
+		System.out.println("Redis Port: " + redis.getFirstMappedPort());
 	}
 }

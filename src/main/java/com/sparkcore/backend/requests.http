@@ -6,22 +6,16 @@
 ### ANLEITUNG:
 ### 1. App starten: ./mvnw spring-boot:run
 ### 2. Request "Step 1: Login" ausführen
-### 3. Token aus der Antwort kopieren und in alle anderen Requests eintragen
-###    (Ersetze <TOKEN> mit dem echten JWT-Token)
+### 3. Token aus der Antwort kopieren und in alle anderen Requests
+###    eintragen (Ersetze <TOKEN> mit dem echten JWT-Token)
 ### ============================================================
 
 
-### ──────────────────────────────────────────────
-### SYSTEM
-### ──────────────────────────────────────────────
 
 ### Ping – Öffentlich (kein Token nötig)
 GET http://localhost:8080/api/v1/system/ping
 
 
-### ──────────────────────────────────────────────
-### AUTH
-### ──────────────────────────────────────────────
 
 ### Step 1: Admin Login → Token kopieren!
 POST http://localhost:8080/api/v1/auth/login
@@ -55,14 +49,10 @@ Content-Type: application/json
 }
 
 
-### ──────────────────────────────────────────────
-### KONTEN (erfordert Admin-Token für POST)
-### ──────────────────────────────────────────────
-
 ### Step 4: Erstes Konto erstellen (Admin-Token erforderlich)
 POST http://localhost:8080/api/v1/accounts
 Content-Type: application/json
-Authorization: Bearer <TOKEN>
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
 
 {
   "ownerName": "Max Mustermann",
@@ -75,7 +65,7 @@ Authorization: Bearer <TOKEN>
 ### Step 5: Zweites Konto erstellen (Admin-Token erforderlich)
 POST http://localhost:8080/api/v1/accounts
 Content-Type: application/json
-Authorization: Bearer <TOKEN>
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
 
 {
   "ownerName": "Lisa Müller",
@@ -87,23 +77,20 @@ Authorization: Bearer <TOKEN>
 
 ### Step 6: Alle Konten abrufen
 GET http://localhost:8080/api/v1/accounts
-Authorization: Bearer <TOKEN>
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
 
 ###
 
 ### Step 7: Einzelnes Konto abrufen (per ID)
 GET http://localhost:8080/api/v1/accounts/1
-Authorization: Bearer <TOKEN>
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
 
 
-### ──────────────────────────────────────────────
-### TRANSAKTIONEN
-### ──────────────────────────────────────────────
 
 ### Step 8: Überweisung – Max → Lisa (150.50 EUR)
 POST http://localhost:8080/api/v1/accounts/transfer
 Content-Type: application/json
-Authorization: Bearer <TOKEN>
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtYXhfbXVzdGVyIiwiaWF0IjoxNzcyMjM3NjUzLCJleHAiOjE3NzIzMjQwNTN9.8-AscgAZRTyeYB6Ai8LmHW7NeVQsrHc7Nu9iBX61_4KL7L8M5a9o9IIMkvfna-fn
 
 {
   "fromIban": "DE12345678901234567890",
@@ -115,13 +102,10 @@ Authorization: Bearer <TOKEN>
 
 ### Step 9: Kontoauszug für Max – alle Transaktionen
 GET http://localhost:8080/api/v1/accounts/DE12345678901234567890/transactions
-Authorization: Bearer <TOKEN>
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
 
 
-### ──────────────────────────────────────────────
-### AUDIT LOGS (nur Admin)
-### ──────────────────────────────────────────────
 
 ### Step 10: Alle Audit-Logs abrufen (Admin-Token erforderlich)
 GET http://localhost:8080/api/v1/audit-logs
-Authorization: Bearer <TOKEN>
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
