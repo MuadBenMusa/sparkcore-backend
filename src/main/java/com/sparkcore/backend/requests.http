@@ -59,7 +59,6 @@ Authorization: Bearer {{admin_token}}
 
 {
   "ownerName": "Max Mustermann",
-  "iban": "DE12345678901234567890",
   "initialBalance": 1000.50
 }
 
@@ -70,7 +69,6 @@ Authorization: Bearer {{admin_token}}
 
 {
   "ownerName": "Lisa Müller",
-  "iban": "DE09876543210987654321",
   "initialBalance": 500.00
 }
 
@@ -84,18 +82,19 @@ Authorization: Bearer {{admin_token}}
 ### ============================================================
 
 ### Step 7: Überweisung – Max → Lisa (150.50 EUR)
+### WICHTIG: Kopiere die echten generierten IBANs aus den Schritten 4 & 5 hierher!
 POST {{baseUrl}}/accounts/transfer
 Content-Type: application/json
 Authorization: Bearer {{user_token}}
 
 {
-  "fromIban": "DE12345678901234567890",
-  "toIban": "DE09876543210987654321",
+  "fromIban": "KOLPIERT_VON_SCHRITT_4",
+  "toIban": "KOPIERT_VON_SCHRITT_5",
   "amount": 150.50
 }
 
-### Step 8: Kontoauszug für Max – alle Transaktionen
-GET {{baseUrl}}/accounts/DE12345678901234567890/transactions
+### Step 8: Kontoauszug für Max – alle Transaktionen (IBAN aus Schritt 4 einfügen)
+GET {{baseUrl}}/accounts/KOLPIERT_VON_SCHRITT_4/transactions
 Authorization: Bearer {{user_token}}
 
 

@@ -27,7 +27,6 @@ public class AccountController {
     public ResponseEntity<Account> createAccount(@Valid @RequestBody CreateAccountRequest request) {
         Account createdAccount = accountService.createAccount(
                 request.ownerName(),
-                request.iban(),
                 request.initialBalance());
         return new ResponseEntity<>(createdAccount, HttpStatus.CREATED);
     }

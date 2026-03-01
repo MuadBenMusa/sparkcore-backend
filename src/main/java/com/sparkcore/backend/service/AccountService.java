@@ -10,9 +10,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import com.sparkcore.backend.util.IbanUtils;
 import com.sparkcore.backend.util.RequestUtils;
 
 import java.math.BigDecimal;
+import java.util.Random;
 
 @Service
 public class AccountService {
@@ -37,7 +39,14 @@ public class AccountService {
         return "SYSTEM";
     }
 
-    public Account createAccount(String ownerName, String iban, BigDecimal initialBalance) {
+    public Account createAccount(String ownerName, BigDecimal initialBalance) {
+        // Generate a random 10-digit account number
+        String accountNumber = String.format("%010d", new Random().nextInt(1000000000));
+        // SparkCore Bank Code (Simulated)
+        String bankCode = "10050000";
+
+        String iban = IbanUtils.generateGermanIban(bankCode, accountNumber);
+
         Account newAccount = new Account();
         newAccount.setOwnerName(ownerName);
         newAccount.setIban(iban);
