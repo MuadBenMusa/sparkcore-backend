@@ -89,6 +89,30 @@ I believe senior engineers must document their trade-offs. You can find detailed
 
 ---
 
+## 📂 Project Structure
+
+```
+src/main/java/com/sparkcore/backend/
+├── config/         # Spring Security, Redis, Kafka, OpenAPI bean configuration
+├── controller/     # REST controllers — HTTP layer only, zero business logic
+├── dto/            # Immutable Java Records for all requests & responses
+├── exception/      # GlobalExceptionHandler + RefreshTokenException
+├── model/          # JPA entities: AppUser, Account, Transaction, AuditLog, RefreshToken
+├── repository/     # Spring Data JPA repositories
+├── security/       # JwtAuthenticationFilter, LoginRateLimitFilter, JwtService
+├── service/        # All business logic: AuthService, AccountService, AuditLogService...
+├── util/           # IbanUtils (Modulo-97), RequestUtils (IP extraction)
+└── validation/     # @ValidIban annotation + IbanValidator (Bean Validation)
+
+src/main/resources/
+├── db/migration/   # Flyway SQL migrations (V1, V2...)
+├── application.yaml          # Main config (Redis, Kafka, JPA)
+└── application-local.yaml    # 🔒 Gitignored — secrets go here
+
+docs/
+└── adr/            # Architecture Decision Records (4 docs)
+```
+
 ## 🛠️ Getting Started
 
 ### Prerequisites
