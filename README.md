@@ -12,11 +12,13 @@ A RESTful banking backend API built with **Java 21** and **Spring Boot 4**, demo
 | Framework | Spring Boot 4 |
 | Security | Spring Security + JWT (jjwt 0.12.5) |
 | Database | PostgreSQL 15 |
+| Caching & Rate Limiting | Redis + Bucket4j |
+| Event Streaming | Apache Kafka (KRaft Mode) |
 | ORM | Spring Data JPA / Hibernate |
 | Validation | Jakarta Bean Validation |
 | Documentation | SpringDoc OpenAPI / Swagger UI |
 | Containerization | Docker + Docker Compose |
-| Testing | JUnit 5 + Mockito |
+| Testing | JUnit 5 + Mockito + Testcontainers |
 
 ---
 
@@ -24,10 +26,10 @@ A RESTful banking backend API built with **Java 21** and **Spring Boot 4**, demo
 
 - **JWT Authentication** — Stateless token-based auth with BCrypt password hashing
 - **Role-Based Authorization** — `USER` and `ADMIN` roles enforced via `@PreAuthorize`
+- **Distributed Rate Limiting** — Global protection against brute-force attacks via Redis & Bucket4j
 - **Account Management** — Create and query bank accounts
 - **Money Transfers** — Transactional transfers with balance validation (`@Transactional`)
-- **Transaction History** — Full ledger per IBAN, sorted by timestamp
-- **Audit Logging** — Every sensitive action (transfers, account creation) is logged with username, IP address, and timestamp
+- **Event-Driven Architecture** — Fully decoupled asynchronous transaction auditing via Apache Kafka
 - **Global Exception Handling** — Structured JSON error responses via `@ControllerAdvice`
 - **Input Validation** — All DTOs validated with `@Valid` + constraint annotations
 - **OpenAPI Docs** — Swagger UI with JWT bearer auth support
@@ -47,7 +49,7 @@ A RESTful banking backend API built with **Java 21** and **Spring Boot 4**, demo
 docker-compose up -d
 ```
 
-This starts a PostgreSQL 15 container (`sparkcore-postgres`) on port `5432`.
+This starts a PostgreSQL 15 database, a Redis cache, and an Apache Kafka broker in the background.
 
 ### 2. Configure Local Secrets
 
@@ -120,7 +122,9 @@ src/main/java/com/sparkcore/backend/
 ## Architecture Decisions
 
 - **Layered architecture** — strict separation between Controller, Service, and Repository layers
+- **Event-Driven Microservices Design** — `AccountService` does not depend on `AuditLogService`. It produces Kafka events (`TransactionEvent`), allowing for massive horizontal scalability.
 - **Stateless sessions** — no server-side session state; every request is authenticated via JWT
+- **Distributed Limits** — `ConcurrentHashMap` was replaced by Redis/Bucket4j `ProxyManager` so IP limits are shared globally across all API instances.
 - **Immutable audit records** — `AuditLog` and `Transaction` entities have no setters
 - **`@Transactional` on transfers** — guarantees atomicity; if anything fails mid-transfer, the database rolls back automatically
-- **Secrets via environment variables** — no credentials in source code; all secrets are injected at runtime
+- **Secrets via environment variables** — no credentials in source code; all secrets/db connections are injected at runtime
