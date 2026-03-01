@@ -29,29 +29,32 @@ SparkCore leverages an Event-Driven Architecture (EDA) to decouple the core tran
 ```mermaid
 graph TD
     Client(Client App / Postman) -->|HTTPS/JSON| API[Spring Boot API]
-    
+    DB[(PostgreSQL)]
+
     subgraph SparkCore Backend Node
-        API --> Auth[Auth Controller]
-        API --> Account[Account Controller]
-        
-        Auth --> JwtFilter(JWT+Redis Filter)
-        Account --> JwtFilter
-        
-        JwtFilter -- Checks Blacklist --> Redis[(Redis Token Cache)]
-        Auth -- Consume Token Bucket --> Redis
-        
-        Account -- Validates ISO-13616 --> CoreLogic[Account Service Core]
-        Auth -- Generates Access/Refresh --> AuthLogic[Auth Service Core]
-        
-        CoreLogic -- Writes Transaction --> DB[(PostgreSQL)]
-        AuthLogic -- Writes Refresh Token --> DB
-        
-        CoreLogic -- Produces Async Event --> Kafka[[Apache Kafka Broker]]
+        API -->|Every Request| RateFilter[Rate Limit Filter]
+        RateFilter -->|Only POST /auth/login| Redis[(Redis Cache)]
+        RateFilter -->|Every Request| JwtFilter[JWT + Redis Filter]
+        JwtFilter -->|Checks Blacklist| Redis
+
+        JwtFilter --> Auth[Auth Controller]
+        JwtFilter --> Account[Account Controller]
+        JwtFilter --> AuditCtrl[AuditLog Controller]
+
+        Auth --> AuthLogic[Auth Service]
+        Account --> CoreLogic[Account Service]
+        AuditCtrl --> AuditRead[AuditLog Service]
+
+        AuthLogic -->|Writes User + Refresh Token| DB
+        CoreLogic -->|Writes Transaction| DB
+        AuditRead -->|Reads Logs| DB
+
+        CoreLogic -->|Produces Async Event| Kafka[[Apache Kafka Broker]]
     end
 
     subgraph Independent Audit Consumer
-        Kafka -- Consumes Event --> AuditService[Audit Log Consumer]
-        AuditService -- Persists Log --> DB
+        Kafka -->|Consumes Event| AuditConsumer[AuditLog Consumer]
+        AuditConsumer -->|Persists Log| DB
     end
 ```
 
