@@ -7,7 +7,7 @@ import com.sparkcore.backend.validation.ValidIban;
 import java.math.BigDecimal;
 
 public record TransferRequest(
-                @NotBlank String fromIban,
+                @NotBlank @ValidIban String fromIban,
                 @NotBlank @ValidIban String toIban,
                 @Positive BigDecimal amount) {
 }

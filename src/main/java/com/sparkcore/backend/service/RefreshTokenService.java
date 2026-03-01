@@ -6,6 +6,7 @@ import com.sparkcore.backend.repository.RefreshTokenRepository;
 import com.sparkcore.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class RefreshTokenService {
      * Wenn der User bereits ein altes Refresh Token hat, wird dieses überschrieben
      * (Token Rotation / Single Device Enforced für dieses Beispiel).
      */
+    @Transactional
     public RefreshToken createRefreshToken(String username) {
         AppUser user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User nicht gefunden"));

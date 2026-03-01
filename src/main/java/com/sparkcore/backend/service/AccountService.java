@@ -14,10 +14,13 @@ import com.sparkcore.backend.util.IbanUtils;
 import com.sparkcore.backend.util.RequestUtils;
 
 import java.math.BigDecimal;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Service
 public class AccountService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final String BANK_CODE = "10050000";
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
@@ -40,12 +43,12 @@ public class AccountService {
     }
 
     public Account createAccount(String ownerName, BigDecimal initialBalance) {
-        // Generate a random 10-digit account number
-        String accountNumber = String.format("%010d", new Random().nextInt(1000000000));
-        // SparkCore Bank Code (Simulated)
-        String bankCode = "10050000";
-
-        String iban = IbanUtils.generateGermanIban(bankCode, accountNumber);
+        // Generate a unique IBAN, retrying on the rare collision
+        String iban;
+        do {
+            String accountNumber = String.format("%010d", SECURE_RANDOM.nextInt(1_000_000_000));
+            iban = IbanUtils.generateGermanIban(BANK_CODE, accountNumber);
+        } while (accountRepository.findByIban(iban).isPresent());
 
         Account newAccount = new Account();
         newAccount.setOwnerName(ownerName);
@@ -95,7 +98,13 @@ public class AccountService {
         Account toAccount = accountRepository.findByIban(toIban)
                 .orElseThrow(() -> new IllegalArgumentException("Empfänger-Konto nicht gefunden: " + toIban));
 
-        // Deckungsprüfung
+        // Ownership check: only the account owner may initiate a transfer
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !fromAccount.getOwnerName().equals(auth.getName())) {
+            throw new AccessDeniedException("Sie können nur von Ihrem eigenen Konto überweisen.");
+        }
+
+
         if (fromAccount.getBalance().compareTo(amount) < 0) {
             throw new IllegalArgumentException("Nicht ausreichendes Guthaben auf dem Sender-Konto.");
         }

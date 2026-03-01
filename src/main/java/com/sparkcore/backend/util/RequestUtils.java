@@ -11,9 +11,14 @@ public final class RequestUtils {
     }
 
     // Hilfsmethode: IP-Adresse aus dem aktuellen Request holen (für Service-Layer)
+    // Delegiert an die Überladung mit HttpServletRequest, damit X-Forwarded-For
+    // auch hier berücksichtigt wird.
     public static String getClientIp() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        return (attributes != null) ? attributes.getRequest().getRemoteAddr() : "UNKNOWN_IP";
+        if (attributes == null) {
+            return "UNKNOWN_IP";
+        }
+        return getClientIp(attributes.getRequest());
     }
 
     // Überladung: IP-Adresse direkt aus dem HttpServletRequest lesen (für Filter)

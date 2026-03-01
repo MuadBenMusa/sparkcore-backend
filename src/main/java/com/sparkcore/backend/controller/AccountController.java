@@ -3,12 +3,18 @@ package com.sparkcore.backend.controller;
 import com.sparkcore.backend.dto.CreateAccountRequest;
 import com.sparkcore.backend.dto.TransferRequest;
 import com.sparkcore.backend.model.Account;
+import com.sparkcore.backend.model.Transaction;
 import com.sparkcore.backend.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 // Alles rund um Bankkonten – anlegen, abfragen, überweisen
 @RestController
@@ -34,7 +40,7 @@ public class AccountController {
     // alle Konten abrufen – nur für Bankmitarbeiter
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<java.util.List<Account>> getAllAccounts() {
+    public ResponseEntity<List<Account>> getAllAccounts() {
         return new ResponseEntity<>(accountService.getAllAccounts(), HttpStatus.OK);
     }
 
@@ -42,7 +48,17 @@ public class AccountController {
     @GetMapping("/{id}")
     public ResponseEntity<Account> getAccountById(@PathVariable Long id) {
         return accountService.getAccountById(id)
-                .map(account -> new ResponseEntity<>(account, HttpStatus.OK))
+                .map(account -> {
+                    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                    if (auth != null) {
+                        boolean isAdmin = auth.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                        if (!isAdmin && !account.getOwnerName().equals(auth.getName())) {
+                            throw new AccessDeniedException("Zugriff verweigert: Dies ist nicht Ihr Konto.");
+                        }
+                    }
+                    return new ResponseEntity<>(account, HttpStatus.OK);
+                })
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
@@ -59,7 +75,7 @@ public class AccountController {
 
     // Kontoauszug – alle Buchungen dieser IBAN, neueste zuerst
     @GetMapping("/{iban}/transactions")
-    public ResponseEntity<java.util.List<com.sparkcore.backend.model.Transaction>> getTransactionHistory(
+    public ResponseEntity<List<Transaction>> getTransactionHistory(
             @PathVariable String iban) {
         return new ResponseEntity<>(accountService.getTransactionHistory(iban), HttpStatus.OK);
     }
