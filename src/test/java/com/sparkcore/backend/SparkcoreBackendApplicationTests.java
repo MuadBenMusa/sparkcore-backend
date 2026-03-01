@@ -9,10 +9,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
+import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.containers.GenericContainer;
 
-// Beweist: Die Anwendung startet korrekt mit echten Postgres- & Redis-Datenbanken.
+// Beweist: Die Anwendung startet korrekt mit echten Postgres-, Redis- & Kafka-Datenbanken/Brokern.
 // Hibernate übernimmt das Schema-Management (create-drop) im Test-Kontext.
 @SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @ActiveProfiles("test")
@@ -26,6 +26,9 @@ class SparkcoreBackendApplicationTests {
 	@Container
 	static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
 			.withExposedPorts(6379);
+
+	@Container
+	static KafkaContainer kafka = new KafkaContainer("apache/kafka-native:3.8.0");
 
 	@DynamicPropertySource
 	static void configureProperties(DynamicPropertyRegistry registry) {
@@ -41,12 +44,16 @@ class SparkcoreBackendApplicationTests {
 		// Redis → Testcontainer
 		registry.add("spring.redis.host", redis::getHost);
 		registry.add("spring.redis.port", redis::getFirstMappedPort);
+
+		// Kafka → Testcontainer
+		registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
 	}
 
 	@Test
 	void contextLoads() {
-		System.out.println("✅ Spring-Kontext läuft mit Postgres & Redis!");
+		System.out.println("✅ Spring-Kontext läuft mit Postgres, Redis & Kafka!");
 		System.out.println("Postgres Port: " + postgres.getFirstMappedPort());
 		System.out.println("Redis Port: " + redis.getFirstMappedPort());
+		System.out.println("Kafka Bootstrap: " + kafka.getBootstrapServers());
 	}
 }

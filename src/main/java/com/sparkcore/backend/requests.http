@@ -1,24 +1,27 @@
 ### ============================================================
 ### SparkCore Backend – API Test Requests
-### Reihenfolge: Auth → Konten → Transaktionen → Audit Logs
 ### ============================================================
 ###
 ### ANLEITUNG:
-### 1. App starten: ./mvnw spring-boot:run
-### 2. Request "Step 1: Login" ausführen
-### 3. Token aus der Antwort kopieren und in alle anderen Requests
-###    eintragen (Ersetze <TOKEN> mit dem echten JWT-Token)
+### 1. Umgebung starten: docker-compose up -d
+### 2. App starten: ./mvnw spring-boot:run
+### 3. Request "Step 1: Admin Login" ausführen
+### 4. Den Token aus der Antwort kopieren und hier unter @admin_token eintragen!
 ### ============================================================
 
+@baseUrl = http://localhost:8080/api/v1
+@admin_token = DEIN_ADMIN_TOKEN_HIER_EINTRAGEN
+@user_token = DEIN_USER_TOKEN_HIER_EINTRAGEN
 
+### ============================================================
+### 1. SYSTEM & AUTHENTICATION
+### ============================================================
 
 ### Ping – Öffentlich (kein Token nötig)
-GET http://localhost:8080/api/v1/system/ping
+GET {{baseUrl}}/system/ping
 
-
-
-### Step 1: Admin Login → Token kopieren!
-POST http://localhost:8080/api/v1/auth/login
+### Step 1: Admin Login → Generiert Token für @admin_token
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
@@ -26,10 +29,8 @@ Content-Type: application/json
   "password": "super_secret"
 }
 
-###
-
 ### Step 2: Neuen User registrieren (kein Token nötig)
-POST http://localhost:8080/api/v1/auth/register
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
@@ -37,10 +38,8 @@ Content-Type: application/json
   "password": "geheimesPasswort123"
 }
 
-###
-
-### Step 3: User Login → Token kopieren!
-POST http://localhost:8080/api/v1/auth/login
+### Step 3: User Login → Generiert Token für @user_token
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
@@ -48,11 +47,15 @@ Content-Type: application/json
   "password": "geheimesPasswort123"
 }
 
+
+### ============================================================
+### 2. ACCOUNT MANAGEMENT (Erfordert Token)
+### ============================================================
 
 ### Step 4: Erstes Konto erstellen (Admin-Token erforderlich)
-POST http://localhost:8080/api/v1/accounts
+POST {{baseUrl}}/accounts
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
+Authorization: Bearer {{admin_token}}
 
 {
   "ownerName": "Max Mustermann",
@@ -60,12 +63,10 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzN
   "initialBalance": 1000.50
 }
 
-###
-
 ### Step 5: Zweites Konto erstellen (Admin-Token erforderlich)
-POST http://localhost:8080/api/v1/accounts
+POST {{baseUrl}}/accounts
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
+Authorization: Bearer {{admin_token}}
 
 {
   "ownerName": "Lisa Müller",
@@ -73,24 +74,19 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzN
   "initialBalance": 500.00
 }
 
-###
-
-### Step 6: Alle Konten abrufen
-GET http://localhost:8080/api/v1/accounts
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
-
-###
-
-### Step 7: Einzelnes Konto abrufen (per ID)
-GET http://localhost:8080/api/v1/accounts/1
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
+### Step 6: Alle Konten abrufen (Admin-Token erforderlich)
+GET {{baseUrl}}/accounts
+Authorization: Bearer {{admin_token}}
 
 
+### ============================================================
+### 3. TRANSACTIONS & AUDIT (Erfordert Token)
+### ============================================================
 
-### Step 8: Überweisung – Max → Lisa (150.50 EUR)
-POST http://localhost:8080/api/v1/accounts/transfer
+### Step 7: Überweisung – Max → Lisa (150.50 EUR)
+POST {{baseUrl}}/accounts/transfer
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtYXhfbXVzdGVyIiwiaWF0IjoxNzcyMjM3NjUzLCJleHAiOjE3NzIzMjQwNTN9.8-AscgAZRTyeYB6Ai8LmHW7NeVQsrHc7Nu9iBX61_4KL7L8M5a9o9IIMkvfna-fn
+Authorization: Bearer {{user_token}}
 
 {
   "fromIban": "DE12345678901234567890",
@@ -98,14 +94,28 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtYXhfbXVzdGVyIiwiaWF0IjoxN
   "amount": 150.50
 }
 
-###
-
-### Step 9: Kontoauszug für Max – alle Transaktionen
-GET http://localhost:8080/api/v1/accounts/DE12345678901234567890/transactions
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
+### Step 8: Kontoauszug für Max – alle Transaktionen
+GET {{baseUrl}}/accounts/DE12345678901234567890/transactions
+Authorization: Bearer {{user_token}}
 
 
+### Step 9: Alle Audit-Logs abrufen (Admin-Token erforderlich)
+GET {{baseUrl}}/audit-logs
+Authorization: Bearer {{admin_token}}
 
-### Step 10: Alle Audit-Logs abrufen (Admin-Token erforderlich)
-GET http://localhost:8080/api/v1/audit-logs
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjIzNzMyNywiZXhwIjoxNzcyMzIzNzI3fQ.9NAsuacd2b86iKwNwOVl28A1ZAH6ivRexAD_9m6LRAYr6CRMwfmbZd9-CmbvR9Zc
+
+### ============================================================
+### 4. SECURITY TESTS (Redis Rate Limiting)
+### ============================================================
+
+### Step 10: Redis Rate Limiting Test (Brute Force Simulation)
+### ANLEITUNG: Klicke 6 mal extrem schnell hintereinander auf diesen Request.
+### Die ersten 5 werden "401 Unauthorized" zurückgeben (falsches Passwort).
+### Der 6. Request MUSS "429 Too Many Requests" zurückgeben!
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "wrong_password_to_test_limit"
+}

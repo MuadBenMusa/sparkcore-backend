@@ -4,8 +4,9 @@ import com.sparkcore.backend.model.Account;
 import com.sparkcore.backend.model.AuditLog;
 import com.sparkcore.backend.model.Transaction;
 import com.sparkcore.backend.repository.AccountRepository;
-import com.sparkcore.backend.repository.AuditLogRepository;
 import com.sparkcore.backend.repository.TransactionRepository;
+import com.sparkcore.backend.dto.TransactionEvent;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.AccessDeniedException;
@@ -19,13 +20,13 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
-    private final AuditLogRepository auditLogRepository; // NEU
+    private final KafkaTemplate<Object, Object> kafkaTemplate;
 
     public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository,
-            AuditLogRepository auditLogRepository) {
+            KafkaTemplate<Object, Object> kafkaTemplate) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
-        this.auditLogRepository = auditLogRepository;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     private String getCurrentUsername() {
@@ -45,10 +46,16 @@ public class AccountService {
 
         Account savedAccount = accountRepository.save(newAccount);
 
-        auditLogRepository.save(new AuditLog(
-                getCurrentUsername(), "CREATE_ACCOUNT",
-                "Konto erstellt für: " + ownerName + " (IBAN: " + iban + ")",
-                RequestUtils.getClientIp(), "SUCCESS"));
+        // Async: Event an Kafka senden (Entkopplung)
+        TransactionEvent event = new TransactionEvent(
+                "CREATE_ACCOUNT",
+                null,
+                iban,
+                initialBalance,
+                "SUCCESS",
+                getCurrentUsername(),
+                RequestUtils.getClientIp());
+        kafkaTemplate.send("transaction-events", event);
 
         return savedAccount;
     }
@@ -96,10 +103,16 @@ public class AccountService {
         Transaction successfulTransaction = new Transaction(fromIban, toIban, amount, "SUCCESS");
         transactionRepository.save(successfulTransaction);
 
-        auditLogRepository.save(new AuditLog(
-                getCurrentUsername(), "TRANSFER",
-                "Von: " + fromIban + " Nach: " + toIban + " Betrag: " + amount,
-                RequestUtils.getClientIp(), "SUCCESS"));
+        // Async: Event an Kafka senden (Entkopplung)
+        TransactionEvent event = new TransactionEvent(
+                "TRANSFER",
+                fromIban,
+                toIban,
+                amount,
+                "SUCCESS",
+                getCurrentUsername(),
+                RequestUtils.getClientIp());
+        kafkaTemplate.send("transaction-events", event);
     }
 
     public java.util.List<Transaction> getTransactionHistory(String iban) {

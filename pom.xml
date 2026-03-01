@@ -102,6 +102,12 @@
 			<version>8.10.1</version>
 		</dependency>
 
+		<!-- Apache Kafka (Event Streaming) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-kafka</artifactId>
+		</dependency>
+
 		<!-- Actuator – Health & Monitoring -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -126,6 +132,11 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 
 		<!-- Testcontainers – Integration Tests with real PostgreSQL -->
 		<dependency>
@@ -142,6 +153,12 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
+			<version>1.20.4</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>kafka</artifactId>
 			<version>1.20.4</version>
 			<scope>test</scope>
 		</dependency>

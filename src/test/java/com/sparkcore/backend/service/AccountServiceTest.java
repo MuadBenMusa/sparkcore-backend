@@ -2,8 +2,8 @@ package com.sparkcore.backend.service;
 
 import com.sparkcore.backend.model.Account;
 import com.sparkcore.backend.repository.AccountRepository;
-import com.sparkcore.backend.repository.AuditLogRepository;
 import com.sparkcore.backend.repository.TransactionRepository;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,7 +28,7 @@ class AccountServiceTest {
     private TransactionRepository transactionRepository; // Fake-Datenbank 2
 
     @Mock
-    private AuditLogRepository auditLogRepository; // Fake-Datenbank 3 (required by AccountService)
+    private KafkaTemplate<Object, Object> kafkaTemplate;
 
     @InjectMocks
     private AccountService accountService; // Unser ECHTER Service, in den die Fakes reingesteckt werden
@@ -111,8 +111,9 @@ class AccountServiceTest {
         verify(accountRepository, times(1)).save(senderAccount);
         verify(accountRepository, times(1)).save(receiverAccount);
 
-        // 3c: Wurde ein Eintrag ins Audit-Log geschrieben?
-        verify(transactionRepository, times(1)).save(any(com.sparkcore.backend.model.Transaction.class));
+        // 3c: Wurde ein Event an Kafka gesendet?
+        verify(kafkaTemplate, times(1)).send(eq("transaction-events"),
+                any(com.sparkcore.backend.dto.TransactionEvent.class));
     }
 
 }

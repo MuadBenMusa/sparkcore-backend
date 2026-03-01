@@ -26,7 +26,18 @@ spring:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
 
-# 5. JWT Konfiguration – Secret MUSS als Env-Var JWT_SECRET gesetzt sein!
+# 6. Apache Kafka - Event Streaming
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9092}
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: sparkcore-audit-group
+      properties:
+        spring.json.trusted.packages: "*"
+
+# 7. JWT Konfiguration – Secret MUSS als Env-Var JWT_SECRET gesetzt sein!
 application:
   security:
     jwt:
