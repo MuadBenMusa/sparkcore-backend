@@ -2,7 +2,6 @@ package com.sparkcore.backend.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -67,20 +66,6 @@ public class GlobalExceptionHandler {
         errorResponse.put("error", "Conflict");
         errorResponse.put("message",
                 "Ein Datensatz mit diesem eindeutigen Wert existiert bereits (z.B. Benutzername oder IBAN).");
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
-    }
-
-    // 3b. NEU: Fängt Optimistic Locking Exceptions ab (Double Spend Protection)
-    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<Map<String, Object>> handleOptimisticLockingException(
-            ObjectOptimisticLockingFailureException ex) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("timestamp", LocalDateTime.now());
-        errorResponse.put("status", HttpStatus.CONFLICT.value());
-        errorResponse.put("error", "Conflict");
-        errorResponse.put("message",
-                "Ein anderer Prozess hat diesen Datensatz in der Zwischenzeit geändert. Bitte versuchen Sie es erneut.");
 
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
