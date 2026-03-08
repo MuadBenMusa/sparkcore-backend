@@ -21,6 +21,9 @@ public class Account {
     @Column(nullable = false)
     private BigDecimal balance; // BigDecimal statt double – bei Geld immer genau!
 
+    @Version
+    private Long version;
+
     public Account() {
     }
 
@@ -54,5 +57,13 @@ public class Account {
 
     public void setBalance(BigDecimal balance) {
         this.balance = balance;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

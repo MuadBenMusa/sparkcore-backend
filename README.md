@@ -1,4 +1,4 @@
-# 🏛️ SparkCore Banking Architecture
+# 🏛️ SparkCore – Event-Driven Banking Backend Architecture
 
 ![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
@@ -8,7 +8,7 @@
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)
 
-SparkCore is a high-performance, resilient, and secure financial backend API. This project demonstrates enterprise-grade architectural patterns, strict security mechanisms, and decoupled microservice communication standards heavily used in the banking sector.
+SparkCore is a high-performance, resilient, and secure financial backend API. It is designed as a **modular monolith with clear microservice boundaries**, demonstrating enterprise-grade architectural patterns, strict security mechanisms, and decoupled communication standards heavily used in the banking sector.
 
 ## 🎯 Why I Built This
 
