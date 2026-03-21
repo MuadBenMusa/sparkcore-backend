@@ -1,4 +1,4 @@
-# 🏛️ SparkCore Banking Architecture
+# 🏛️ SparkCore – Event-Driven Banking Backend
 
 ![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
@@ -8,7 +8,7 @@
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)
 
-SparkCore is a high-performance, resilient, and secure financial backend API. This project demonstrates enterprise-grade architectural patterns, strict security mechanisms, and decoupled microservice communication standards heavily used in the banking sector.
+SparkCore is a high-performance, resilient, and secure financial backend API. It is architected as a **modular monolith with clear microservice boundaries** — each domain (Auth, Accounts, Audit) is fully isolated with dedicated services, repositories, and async messaging contracts, making it straightforward to extract into independent services when scaling demands it. This pattern is standard in modern banking backends (e.g. Finanz Informatik, Deutsche Bank).
 
 ## 🎯 Why I Built This
 
@@ -18,6 +18,7 @@ This project addresses those challenges by implementing:
 *   **Dual-Token Security Architectures** with instant revocation.
 *   **Distributed Rate Limiting** to thwart credential stuffing across clusters.
 *   **Event-Driven Asynchronous Auditing** to ensure core transactions never block.
+*   **Idempotency Keys & Optimistic Locking** to guarantee absolute zero double-spending during network retries or concurrent requests.
 *   **Mathematical Domain Logic** (ISO 13616 German IBAN Modulo-97 validation).
 
 ---
@@ -79,6 +80,8 @@ I believe senior engineers must document their trade-offs. You can find detailed
 - **Global Rate Limiting:** Bucket4j intercepts malicious API spammers globally via Redis, saving database cycles.
 
 ### Core Banking Logic
+- **Idempotency Keys:** Network timeout protection. Duplicate `POST /transfer` requests with the same `Idempotency-Key` return the cached response without double-charging.
+- **Race Condition Prevention:** `@Version` Optimistic Locking on the Account entity ensures concurrent transfers never result in a silent double-spend.
 - **ISO-13616 IBAN Generation:** Accounts are automatically assigned mathematically valid German IBANs utilizing Modulo-97 calculations (ISO 7064).
 - **Custom Bean Validation (`@ValidIban`):** Automatically rejects transfers to fake/structurally-invalid IBANs on the HTTP layer.
 - **ACID Transactions:** Full Rollback capabilities on failed transfers via Spring's declarative `@Transactional`.
@@ -162,7 +165,7 @@ Once running, explore the fully documented OpenAPI standard UI:
 | `POST` | `/api/v1/accounts` | Create a bank account (IBAN auto-generated) | ADMIN |
 | `GET` | `/api/v1/accounts` | List all bank accounts | ADMIN |
 | `GET` | `/api/v1/accounts/{id}` | Get account by ID | Token |
-| `POST` | `/api/v1/accounts/transfer` | Transfer money (validates @ValidIban, @Transactional) | USER |
+| `POST` | `/api/v1/accounts/transfer` | Transfer money (Idempotency, @ValidIban, @Transactional) | USER |
 | `GET` | `/api/v1/accounts/{iban}/transactions` | Get transaction history for an IBAN | Token |
 | `GET` | `/api/v1/audit-logs` | Asynchronous Kafka-processed audit trail | ADMIN |
 | `GET` | `/api/v1/system/ping` | Health check | Public |

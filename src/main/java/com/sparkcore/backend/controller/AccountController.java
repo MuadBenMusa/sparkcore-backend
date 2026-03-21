@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 // Alles rund um Bankkonten – anlegen, abfragen, überweisen
@@ -46,15 +47,18 @@ public class AccountController {
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    // Geldüberweisung – Validierung via @Valid, Logik im Service
+    // Geldüberweisung – Idempotency-Key Header (optional) verhindert doppelte Buchungen
     @PostMapping("/transfer")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<String> transferMoney(@Valid @RequestBody TransferRequest request) {
-        accountService.transferMoney(
-                request.fromIban(),
-                request.toIban(),
-                request.amount());
-        return new ResponseEntity<>("Überweisung erfolgreich verarbeitet.", HttpStatus.OK);
+    public ResponseEntity<String> transferMoney(
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @Valid @RequestBody TransferRequest request,
+            Authentication authentication) {
+        String username = authentication.getName();
+        String result = accountService.transferMoney(
+                request.fromIban(), request.toIban(), request.amount(),
+                idempotencyKey, username);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     // Kontoauszug – alle Buchungen dieser IBAN, neueste zuerst

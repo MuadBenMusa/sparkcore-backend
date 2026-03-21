@@ -21,6 +21,14 @@ public class Account {
     @Column(nullable = false)
     private BigDecimal balance; // BigDecimal statt double – bei Geld immer genau!
 
+    /**
+     * Optimistic Locking – verhindert Double-Spend bei gleichzeitigen Überweisungen.
+     * Wenn zwei Transaktionen dieselbe Version lesen und beide speichern wollen,
+     * wirft JPA eine OptimisticLockException für die zweite → kein stiller Datenverlust.
+     */
+    @Version
+    private Long version;
+
     public Account() {
     }
 
@@ -54,5 +62,9 @@ public class Account {
 
     public void setBalance(BigDecimal balance) {
         this.balance = balance;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

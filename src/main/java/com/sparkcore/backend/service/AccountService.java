@@ -1,8 +1,10 @@
 package com.sparkcore.backend.service;
 
 import com.sparkcore.backend.model.Account;
+import com.sparkcore.backend.model.IdempotencyKey;
 import com.sparkcore.backend.model.Transaction;
 import com.sparkcore.backend.repository.AccountRepository;
+import com.sparkcore.backend.repository.IdempotencyKeyRepository;
 import com.sparkcore.backend.repository.TransactionRepository;
 import com.sparkcore.backend.dto.TransactionEvent;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -22,12 +24,14 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final KafkaTemplate<Object, Object> kafkaTemplate;
+    private final IdempotencyKeyRepository idempotencyKeyRepository;
 
     public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository,
-            KafkaTemplate<Object, Object> kafkaTemplate) {
+            KafkaTemplate<Object, Object> kafkaTemplate, IdempotencyKeyRepository idempotencyKeyRepository) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.kafkaTemplate = kafkaTemplate;
+        this.idempotencyKeyRepository = idempotencyKeyRepository;
     }
 
     private String getCurrentUsername() {
@@ -77,7 +81,19 @@ public class AccountService {
     }
 
     @org.springframework.transaction.annotation.Transactional
-    public void transferMoney(String fromIban, String toIban, BigDecimal amount) {
+    public String transferMoney(String fromIban, String toIban, BigDecimal amount,
+                                String idempotencyKey, String username) {
+
+        // --- IDEMPOTENCY CHECK ---
+        // Falls der Client denselben Key nochmal sendet (z.B. nach einem Network-Timeout),
+        // geben wir die gecachte Antwort zurück, ohne die Überweisung nochmal auszuführen.
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            var cached = idempotencyKeyRepository.findByIdempotencyKeyAndUsername(idempotencyKey, username);
+            if (cached.isPresent()) {
+                return cached.get().getResponseBody(); // Identische Antwort, keine zweite Buchung!
+            }
+        }
+
         // negativer Betrag macht keinen Sinn
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Überweisungsbetrag muss größer als 0 sein.");
@@ -113,14 +129,20 @@ public class AccountService {
 
         // Async: Event an Kafka senden (Entkopplung)
         TransactionEvent event = new TransactionEvent(
-                "TRANSFER",
-                fromIban,
-                toIban,
-                amount,
-                "SUCCESS",
-                getCurrentUsername(),
-                RequestUtils.getClientIp());
+                "TRANSFER", fromIban, toIban, amount, "SUCCESS",
+                getCurrentUsername(), RequestUtils.getClientIp());
         kafkaTemplate.send("transaction-events", event);
+
+        String responseMessage = "Überweisung erfolgreich verarbeitet.";
+
+        // --- IDEMPOTENCY KEY SPEICHERN ---
+        // Nur speichern wenn ein Key mitgeschickt wurde.
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            idempotencyKeyRepository.save(
+                    new IdempotencyKey(idempotencyKey, username, responseMessage, 200));
+        }
+
+        return responseMessage;
     }
 
     public java.util.List<Transaction> getTransactionHistory(String iban) {

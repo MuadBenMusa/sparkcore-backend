@@ -16,10 +16,10 @@
 @baseUrl = http://localhost:8080/api/v1
 
 # Hier nach Login eintragen:
-@admin_token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MjQwMDU1NCwiZXhwIjoxNzcyNDAxNDU0fQ.FpQEp_PJNBJMEE7mnNd6wZmLEpEFbH4xdUhSrYhwYMyPzvbu0axhhNo8e6oqVEa6
-@admin_refresh_token = 547c1720-28a6-4345-83f6-0e1cb118d2a0
-@user_token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtYXhfbXVzdGVyIiwiaWF0IjoxNzcyNDAwNDcxLCJleHAiOjE3NzI0MDEzNzF9.Ezczo8ct8-zaYmgldv3XHpmqyH6bSXk4AVzRG0DfF-FI-wnwdqhuvGpC7tx0iKQe
-@user_refresh_token = 98bfa71c-7d7b-43cc-ad88-6959cded4710
+@admin_token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3NDA4MTQ0MywiZXhwIjoxNzc0MDgyMzQzfQ.pXytsttxoyleR8WQZaRF_oXfBk5123a7S5Jcnh-5xiWhWBV600INQITeRMjWul7b
+@admin_refresh_token = 777c30e6-87c5-49a8-ad88-8e735468e805
+@user_token = eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtYXhfbXVzdGVyIiwiaWF0IjoxNzc0MDgxNTk2LCJleHAiOjE3NzQwODI0OTZ9.mOI_aFsDdygnPTM3utJFdfOrYqy4-MI1GkPMUgYIY5OkYvqF0NlSZssw3ins33SL
+@user_refresh_token = ecbb0767-7afb-4127-837c-d51a8ca5e80e
 
 # Hier nach Schritt 4 & 5 eintragen:
 @iban_max = DE46100500000284667551
@@ -100,6 +100,18 @@ Authorization: Bearer {{admin_token}}
 ### ============================================================
 ### SECTION 3: SECURITY – AUTH ERROR CASES
 ### ============================================================
+
+### [3.0.1] ❌ Zugriff auf geschützte Route OHNE Token → 401 Unauthorized
+GET {{baseUrl}}/accounts
+
+###
+
+### [3.0.2] ❌ Zugriff mit MANIPULIERTEM Token → 401 Unauthorized
+### Erwartete Antwort: {"error": "Ungültiges oder abgelaufenes JWT Token."}
+GET {{baseUrl}}/accounts
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.FakePayloadHere.FakeSignatureHere
+
+###
 
 ### [3.1] ❌ Login mit falschem Passwort → 401 Unauthorized
 POST {{baseUrl}}/auth/login
@@ -202,23 +214,54 @@ Authorization: Bearer {{user_token}}
 ### SECTION 5: TRANSACTIONS
 ### ============================================================
 
-### [5.1] ✅ 🔐 Überweisung: Max → Lisa (150.50 EUR)
-### WICHTIG: Trage die echten IBANs aus Schritt 4 & 5 in @iban_max und @iban_lisa ein!
+### [5.1] ✅ 🔐 Überweisung: Max → Lisa (50.00 EUR) – MIT Idempotency-Key
 POST {{baseUrl}}/accounts/transfer
 Content-Type: application/json
 Authorization: Bearer {{user_token}}
+Idempotency-Key: test-idempotency-key-001
 
 {
   "fromIban": "{{iban_max}}",
   "toIban": "{{iban_lisa}}",
-  "amount": 150.50
+  "amount": 50.00
+}
+
+###
+
+### [5.2] ✅ 🔐 Idempotency-Test: EXAKTER WIEDERHOLTER REQUEST von 5.1
+### Führe diesen Request aus. Der Kontostand darf sich NICHT weiter verringern!
+### Erwartete Antwort: 200 OK "Überweisung erfolgreich verarbeitet." (Gecacht!)
+POST {{baseUrl}}/accounts/transfer
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+Idempotency-Key: test-idempotency-key-001
+
+{
+  "fromIban": "{{iban_max}}",
+  "toIban": "{{iban_lisa}}",
+  "amount": 50.00
+}
+
+###
+
+### [5.3] ✅ 🔐 Überweisung: Lisa → Max (25.00 EUR) - Neues Token, Neuer Key
+### (Rücküberweisung zum Testen von beidseitigen Buchungen)
+POST {{baseUrl}}/accounts/transfer
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+Idempotency-Key: test-idempotency-key-002
+
+{
+  "fromIban": "{{iban_lisa}}",
+  "toIban": "{{iban_max}}",
+  "amount": 25.00
 }
 
 ###
 
 ### [5.2] ✅ 🔐 Transaktionshistorie für Max (nach der Überweisung in 5.1)
 GET {{baseUrl}}/accounts/{{iban_max}}/transactions
-Authorization: Bearer {{user_token}}
+Authorization: Bearer {{admin_token}}
 
 ###
 
@@ -235,7 +278,7 @@ Authorization: Bearer {{user_token}}
 
 ###
 
-### [5.4] ❌ Überweisung mit zu wenig Geld → 400 Bad Request (Insufficient Funds)
+### [5.7] ❌ Überweisung mit zu wenig Geld → 400 Bad Request (Insufficient Funds)
 POST {{baseUrl}}/accounts/transfer
 Content-Type: application/json
 Authorization: Bearer {{user_token}}
@@ -248,7 +291,21 @@ Authorization: Bearer {{user_token}}
 
 ###
 
-### [5.5] ❌ ADMIN versucht Überweisung → 403 Forbidden (USER-Only)
+### [5.8] ❌ Überweisung auf sich selbst → 400 Bad Request
+POST {{baseUrl}}/accounts/transfer
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "fromIban": "{{iban_max}}",
+  "toIban": "{{iban_max}}",
+  "amount": 10.00
+}
+
+###
+
+### [5.9] ❌ ADMIN versucht Überweisung → 403 Forbidden (USER-Only)
+### (Admin darf Konten anlegen, aber nicht eigenmächtig Geld durch die Gegend buchen)
 POST {{baseUrl}}/accounts/transfer
 Content-Type: application/json
 Authorization: Bearer {{admin_token}}

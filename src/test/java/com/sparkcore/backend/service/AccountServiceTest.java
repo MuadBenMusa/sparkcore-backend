@@ -2,6 +2,7 @@ package com.sparkcore.backend.service;
 
 import com.sparkcore.backend.model.Account;
 import com.sparkcore.backend.repository.AccountRepository;
+import com.sparkcore.backend.repository.IdempotencyKeyRepository;
 import com.sparkcore.backend.repository.TransactionRepository;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.junit.jupiter.api.Test;
@@ -22,16 +23,19 @@ import static org.mockito.Mockito.*;
 class AccountServiceTest {
 
     @Mock
-    private AccountRepository accountRepository; // Fake-Datenbank 1
+    private AccountRepository accountRepository;
 
     @Mock
-    private TransactionRepository transactionRepository; // Fake-Datenbank 2
+    private TransactionRepository transactionRepository;
 
     @Mock
     private KafkaTemplate<Object, Object> kafkaTemplate;
 
+    @Mock
+    private IdempotencyKeyRepository idempotencyKeyRepository;
+
     @InjectMocks
-    private AccountService accountService; // Unser ECHTER Service, in den die Fakes reingesteckt werden
+    private AccountService accountService;
 
     @Test
     void transferMoney_ThrowsException_WhenInsufficientFunds() {
@@ -60,7 +64,7 @@ class AccountServiceTest {
         // Methode aufrufen
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> accountService.transferMoney(senderIban, receiverIban, transferAmount));
+                () -> accountService.transferMoney(senderIban, receiverIban, transferAmount, null, "testuser"));
 
         // --- 3. VERIFY (Sicherstellen, dass alles exakt nach Plan lief) ---
         // Prüfen, ob der Fehlertext genau übereinstimmt (damit fängt uns der Test,
@@ -98,7 +102,7 @@ class AccountServiceTest {
 
         // --- 2. ACT (Ausführen) ---
         // Diesmal erwarten wir KEINE Exception, wir rufen die Methode einfach auf
-        accountService.transferMoney(senderIban, receiverIban, transferAmount);
+        accountService.transferMoney(senderIban, receiverIban, transferAmount, null, "testuser");
 
         // --- 3. ASSERT & VERIFY (Prüfen) ---
         // 3a: Hat der Service im Speicher richtig gerechnet?
