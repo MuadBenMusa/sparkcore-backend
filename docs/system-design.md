@@ -114,8 +114,10 @@ spring:
       enable-auto-commit: false
 ```
 
-### Idempotency (Future Work)
-Currently, repeated Kafka delivery of the same event would create duplicate audit log entries. Adding an `event_id` (UUID) to `TransactionEvent` and checking for duplicates before insert would make the consumer **idempotent**.
+### Idempotency ✅ Implemented
+Duplicate `POST /transfer` requests with the same `Idempotency-Key` header (scoped per user) return the cached original response without executing a second transfer. The `idempotency_keys` table stores the key, username, and response body with a `UNIQUE(idempotency_key, username)` constraint.
+
+Remaining gap: repeated Kafka delivery of the same audit event could still create duplicate audit log entries. Adding an `event_id` (UUID) to `TransactionEvent` and deduplicating on insert would make the Kafka consumer fully idempotent.
 
 ---
 

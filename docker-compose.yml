@@ -2,16 +2,17 @@ services:
   postgres-db:
     image: postgres:16-alpine
     container_name: sparkcore-postgres
+    env_file: .env
     environment:
-      POSTGRES_USER: sparkcore_user
-      POSTGRES_PASSWORD: super_secret_password
-      POSTGRES_DB: sparkcore_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sparkcore_user -d sparkcore_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -52,9 +53,10 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: sparkcore-pgadmin
+    env_file: .env
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@sparkcore.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "5050:80"
     depends_on:

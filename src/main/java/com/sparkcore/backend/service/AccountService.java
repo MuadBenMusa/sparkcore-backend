@@ -1,13 +1,16 @@
 package com.sparkcore.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sparkcore.backend.model.Account;
 import com.sparkcore.backend.model.IdempotencyKey;
+import com.sparkcore.backend.model.OutboxEvent;
 import com.sparkcore.backend.model.Transaction;
 import com.sparkcore.backend.repository.AccountRepository;
 import com.sparkcore.backend.repository.IdempotencyKeyRepository;
+import com.sparkcore.backend.repository.OutboxEventRepository;
 import com.sparkcore.backend.repository.TransactionRepository;
 import com.sparkcore.backend.dto.TransactionEvent;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,22 +19,30 @@ import com.sparkcore.backend.util.IbanUtils;
 import com.sparkcore.backend.util.RequestUtils;
 
 import java.math.BigDecimal;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Service
 public class AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
-    private final KafkaTemplate<Object, Object> kafkaTemplate;
+    private final OutboxEventRepository outboxEventRepository;
     private final IdempotencyKeyRepository idempotencyKeyRepository;
+    private final ObjectMapper objectMapper;
 
-    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository,
-            KafkaTemplate<Object, Object> kafkaTemplate, IdempotencyKeyRepository idempotencyKeyRepository) {
-        this.accountRepository = accountRepository;
+    // SecureRandom ist kryptographisch sicher – kein vorhersehbares Muster möglich
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    public AccountService(AccountRepository accountRepository,
+                          TransactionRepository transactionRepository,
+                          OutboxEventRepository outboxEventRepository,
+                          IdempotencyKeyRepository idempotencyKeyRepository,
+                          ObjectMapper objectMapper) {
+        this.accountRepository     = accountRepository;
         this.transactionRepository = transactionRepository;
-        this.kafkaTemplate = kafkaTemplate;
+        this.outboxEventRepository = outboxEventRepository;
         this.idempotencyKeyRepository = idempotencyKeyRepository;
+        this.objectMapper          = objectMapper;
     }
 
     private String getCurrentUsername() {
@@ -44,8 +55,8 @@ public class AccountService {
     }
 
     public Account createAccount(String ownerName, BigDecimal initialBalance) {
-        // Generate a random 10-digit account number
-        String accountNumber = String.format("%010d", new Random().nextInt(1000000000));
+        // Generate a cryptographically secure 10-digit account number
+        String accountNumber = String.format("%010d", SECURE_RANDOM.nextInt(1_000_000_000));
         // SparkCore Bank Code (Simulated)
         String bankCode = "10050000";
 
@@ -58,16 +69,16 @@ public class AccountService {
 
         Account savedAccount = accountRepository.save(newAccount);
 
-        // Async: Event an Kafka senden (Entkopplung)
-        TransactionEvent event = new TransactionEvent(
+        // Outbox Pattern: Event in derselben Transaktion persistieren.
+        // Der OutboxEventPublisher liest es und schickt es async an Kafka.
+        saveOutboxEvent(new TransactionEvent(
                 "CREATE_ACCOUNT",
                 null,
                 iban,
                 initialBalance,
                 "SUCCESS",
                 getCurrentUsername(),
-                RequestUtils.getClientIp());
-        kafkaTemplate.send("transaction-events", event);
+                RequestUtils.getClientIp()));
 
         return savedAccount;
     }
@@ -127,11 +138,12 @@ public class AccountService {
         Transaction successfulTransaction = new Transaction(fromIban, toIban, amount, "SUCCESS");
         transactionRepository.save(successfulTransaction);
 
-        // Async: Event an Kafka senden (Entkopplung)
-        TransactionEvent event = new TransactionEvent(
+        // Outbox Pattern: Event atomar mit der Buchung persistieren.
+        // Nutzt den per Parameter übergebenen username (nicht SecurityContext) – konsistenter.
+        // → Kafka-Delivery erfolgt durch OutboxEventPublisher (alle 5s).
+        saveOutboxEvent(new TransactionEvent(
                 "TRANSFER", fromIban, toIban, amount, "SUCCESS",
-                getCurrentUsername(), RequestUtils.getClientIp());
-        kafkaTemplate.send("transaction-events", event);
+                username, RequestUtils.getClientIp()));
 
         String responseMessage = "Überweisung erfolgreich verarbeitet.";
 
@@ -162,4 +174,18 @@ public class AccountService {
         return transactionRepository.findBySenderIbanOrReceiverIbanOrderByTimestampDesc(iban, iban);
     }
 
+    /**
+     * Serialisiert ein TransactionEvent als JSON und speichert es als OutboxEvent.
+     * Wird innerhalb der laufenden @Transactional-Methode aufgerufen, so dass
+     * der Event nur committed wird, wenn die gesamte Buchung erfolgreich war.
+     */
+    private void saveOutboxEvent(TransactionEvent event) {
+        try {
+            String json = objectMapper.writeValueAsString(event);
+            outboxEventRepository.save(new OutboxEvent(event.action(), json));
+        } catch (JsonProcessingException e) {
+            // Sollte nie passieren – falls doch, lieber den Transfer abbrechen als stumm verlieren
+            throw new RuntimeException("Fehler beim Serialisieren des Outbox-Events", e);
+        }
+    }
 }

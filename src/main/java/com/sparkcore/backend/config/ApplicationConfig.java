@@ -1,5 +1,6 @@
 package com.sparkcore.backend.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sparkcore.backend.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,13 @@ public class ApplicationConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    // Jackson ObjectMapper – wird von AccountService und OutboxEventPublisher für
+    // JSON-Serialisierung der Outbox-Events benötigt.
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 
     // User aus der DB laden – wird von Spring Security beim Login aufgerufen

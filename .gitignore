@@ -33,6 +33,7 @@ build/
 .vscode/
 
 ### Security / Lokale Configs  ###
+.env
 application-local.yaml
 application-local.properties
 

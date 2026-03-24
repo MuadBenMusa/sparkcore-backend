@@ -166,4 +166,74 @@ class AuthServiceTest {
         // Sicherstellen, dass auf keinen Fall ein Token generiert wurde
         verify(jwtService, never()).generateToken(anyString());
     }
+
+    // -----------------------------------------------------------------------
+    // Refresh Token Rotation Tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    void refreshToken_RotatesTokens_OnSuccess() {
+        // --- 1. ARRANGE ---
+        String oldRefreshTokenValue = "old-refresh-token-uuid";
+        AppUser user = new AppUser("john_doe", "hashed", Role.USER);
+
+        com.sparkcore.backend.model.RefreshToken oldRefreshToken = new com.sparkcore.backend.model.RefreshToken();
+        oldRefreshToken.setToken(oldRefreshTokenValue);
+        oldRefreshToken.setUser(user);
+
+        // Service gibt das "alte" Token zurück (gültig, nicht abgelaufen)
+        when(refreshTokenService.verifyExpiration(oldRefreshTokenValue))
+                .thenReturn(Optional.of(oldRefreshToken));
+
+        // Neues JWT und neues Refresh Token werden generiert
+        when(jwtService.generateToken(user.getUsername())).thenReturn("new_jwt_token");
+
+        com.sparkcore.backend.model.RefreshToken newRefreshToken = new com.sparkcore.backend.model.RefreshToken();
+        newRefreshToken.setToken("new-refresh-token-uuid");
+        when(refreshTokenService.createRefreshToken(user.getUsername())).thenReturn(newRefreshToken);
+
+        // --- 2. ACT ---
+        AuthResponse response = authService.refreshToken(oldRefreshTokenValue);
+
+        // --- 3. ASSERT & VERIFY ---
+        assertEquals("new_jwt_token", response.accessToken());
+        assertEquals("new-refresh-token-uuid", response.refreshToken());
+
+        // Eine Rotation bedeutet: createRefreshToken wurde genau einmal aufgerufen
+        // (das löscht intern das alte Token und erstellt ein neues)
+        verify(refreshTokenService, times(1)).createRefreshToken(user.getUsername());
+        verify(jwtService, times(1)).generateToken(user.getUsername());
+    }
+
+    // -----------------------------------------------------------------------
+    // Logout + Blacklist Tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    void logout_BlacklistsJwtAndDeletesRefreshToken() {
+        // --- 1. ARRANGE ---
+        // Ein gültiges, aber noch nicht abgelaufenes JWT
+        // (Ablauf: weit in der Zukunft damit diffMs > 0 gilt)
+        String fakeJwt = "eyJhbGciOiJIUzM4NCJ9.fake.payload";
+        String authHeader = "Bearer " + fakeJwt;
+        String username = "john_doe";
+        AppUser user = new AppUser(username, "hash", Role.USER);
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+
+        // JWT-Ablaufzeit: 10 Minuten in der Zukunft (damit diffMs positiv ist)
+        java.util.Date futureDate = new java.util.Date(System.currentTimeMillis() + 1000L * 60 * 10);
+        when(jwtService.extractExpiration(fakeJwt)).thenReturn(futureDate);
+
+        // --- 2. ACT ---
+        authService.logout(authHeader, username);
+
+        // --- 3. VERIFY ---
+        // 3a: JWT muss mit einer positiven TTL auf die Blacklist
+        verify(tokenBlacklistService, times(1))
+                .blacklistToken(eq(fakeJwt), any(java.time.Duration.class));
+
+        // 3b: Das Refresh-Token muss aus der DB gelöscht worden sein
+        verify(refreshTokenService, times(1)).deleteByUser(user);
+    }
 }

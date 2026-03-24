@@ -47,9 +47,11 @@ public class SecurityConfig {
                 // kein Session-State – jeder Request trägt sein Token selbst
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-                // Rate-Limit-Filter läuft zuerst, dann JWT-Validierung
-                .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                // Explizite Reihenfolge: Rate-Limit → JWT → UsernamePassword
+                // loginRateLimitFilter MUSS vor jwtAuthFilter laufen, damit gesperrte IPs
+                // nicht bis zur JWT-Validierung durchkommen.
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(loginRateLimitFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }
